@@ -361,7 +361,7 @@ void updateObservations()
     {
         if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
         {
-            glReadPixels(agentPos[i][0]-2, agentPos[i][1]-2,
+            glReadPixels(agentPos[i][0]-1, agentPos[i][1]-1,
                          3, 3,
                          GL_RGBA, GL_FLOAT, data);
 
