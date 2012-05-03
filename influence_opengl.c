@@ -411,7 +411,7 @@ void renderScene(void)
         glActiveTextureARB(GL_TEXTURE7);
         glBindTexture(GL_TEXTURE_2D, fieldTexIds[src]);
 
-        drawFullScreenQuad(1);
+        drawFullScreenQuad();
 
         glUseProgramObjectARB(0);
         glBindTexture(GL_TEXTURE_2D, 0);
