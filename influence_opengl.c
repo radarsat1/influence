@@ -343,13 +343,13 @@ void drawBorder()
     glColor4f(1,1,1,1);
     glBegin(GL_LINES);
     glVertex2f(1, 1);
-    glVertex2f(1, HEIGHT);
+    glVertex2f(1, HEIGHT-1);
     glVertex2f(1, 1);
-    glVertex2f(WIDTH, 1);
-    glVertex2f(WIDTH, HEIGHT);
-    glVertex2f(1, HEIGHT);
-    glVertex2f(WIDTH, HEIGHT);
-    glVertex2f(WIDTH, 1);
+    glVertex2f(WIDTH-1, 1);
+    glVertex2f(WIDTH-1, HEIGHT-1);
+    glVertex2f(1, HEIGHT-1);
+    glVertex2f(WIDTH-1, HEIGHT-1);
+    glVertex2f(WIDTH-1, 1);
     glEnd();
 }
 
