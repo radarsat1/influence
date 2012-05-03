@@ -355,20 +355,20 @@ void drawBorder()
 
 void updateObservations()
 {
-    float data[3*3*4];
+    float data[5*5*4];
     int i;
     for (i=0; i < maxAgents; i++)
     {
         if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
         {
             glReadPixels(agentPos[i][0]-2, agentPos[i][1]-2,
-                         3, 3,
+                         5, 5,
                          GL_RGBA, GL_FLOAT, data);
 
-            agentObs[i][0] = data[2*4+0+1*3*4];
-            agentObs[i][1] = data[1*4+1+2*3*4];
-            agentObs[i][2] = data[0*4+2+1*3*4];
-            agentObs[i][3] = data[1*4+3+0*3*4];
+            agentObs[i][0] = data[4*4+0+2*5*4];
+            agentObs[i][1] = data[2*4+1+4*5*4];
+            agentObs[i][2] = data[0*4+2+2*5*4];
+            agentObs[i][3] = data[2*4+3+0*5*4];
         }
     }
 }
