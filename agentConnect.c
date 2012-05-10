@@ -91,7 +91,7 @@ void link_db_callback(mapper_db_link record,
         float mn=0, mx=1;
         mdev_add_input(acs->dev, "observation", 4, 'f', "norm", &mn, &mx,
                        signal_handler, 0);
-        int imn=0, imx=480;
+        int imn=0, imx=640;
         sig_x = mdev_add_output(acs->dev, "position/x", 1, 'i', 0, &imn, &imx);
         imn=0; imx=480;
         sig_y = mdev_add_output(acs->dev, "position/y", 1, 'i', 0, &imn, &imx);
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 
     float pos[2];
     pos[0] = rand()%WIDTH/2+WIDTH/4;
-    pos[1] = rand()%WIDTH/2+WIDTH/4;
+    pos[1] = rand()%HEIGHT/2+HEIGHT/4;
     float vel[2] = {0, 0};
     float gain = 2;
     float limit = 0.1;
