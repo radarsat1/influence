@@ -9,6 +9,7 @@ struct _autoConnectState
     int seen_srcdest_link;
     int seen_destsrc_link;
     char *vector_device_name;
+    char *xagora_device_name;
     int connected;
 
     mapper_device dev;
@@ -23,6 +24,7 @@ float obs[5] = {0,0,0,0,0};
 #define HEIGHT 480
 
 int id = 0;
+int done = 0;
 
 void make_connections()
 {
@@ -43,10 +45,20 @@ void make_connections()
 
     mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 
+    sprintf(signame2, "%s/X_Butterfly%d",
+            acs->xagora_device_name, mdev_ordinal(acs->dev));
+
+    mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
+
     sprintf(signame1, "%s/position/y", mdev_name(acs->dev));
 
     sprintf(signame2, "%s/node/%d/position/y",
             acs->vector_device_name, mdev_ordinal(acs->dev));
+
+    mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
+
+    sprintf(signame2, "%s/Z_Butterfly%d",
+            acs->xagora_device_name, mdev_ordinal(acs->dev));
 
     mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 }
@@ -67,6 +79,8 @@ void link_db_callback(mapper_db_link record,
 {
     struct _autoConnectState *acs = (struct _autoConnectState*)user;
 
+    if (acs->connected)
+        return;
     if (!acs->vector_device_name || !mdev_name(acs->dev))
         return;
 
@@ -96,7 +110,8 @@ void link_db_callback(mapper_db_link record,
         imn=0; imx=480;
         sig_y = mdev_add_output(acs->dev, "position/y", 1, 'i', 0, &imn, &imx);
 
-        acs->connected = 1;
+        if (sig_x && sig_y)
+            acs->connected = 1;
     }
 }
 
@@ -134,6 +149,15 @@ mapper_device autoConnect()
     }
     mapper_db_device_done(dbdev);
 
+    dbdev = mapper_db_match_devices_by_name(db, "XAgora_receiver");
+    if (dbdev) {
+        acs->xagora_device_name = strdup((*dbdev)->name);
+        mapper_monitor_link(acs->mon, mdev_name(acs->dev), (*dbdev)->name);
+        
+        mapper_monitor_request_links_by_name(acs->mon, (*dbdev)->name);
+    }
+    mapper_db_device_done(dbdev);
+
     i=0;
     while (i++ < 1000 && !acs->connected) {
         mdev_poll(acs->dev, 100);
@@ -160,9 +184,20 @@ void autoDisconnect()
                               mdev_name(acs->dev));
         free(acs->vector_device_name);
     }
+    if (acs->xagora_device_name) {
+        mapper_monitor_unlink(acs->mon,
+                              mdev_name(acs->dev),
+                              acs->xagora_device_name);
+        free(acs->xagora_device_name);
+    }
     if (acs->dev)
         mdev_free(acs->dev);
     memset(acs, 0, sizeof(struct _autoConnectState));
+}
+
+void ctrlc(int sig)
+{
+    done = 1;
 }
 
 int main(int argc, char *argv[])
@@ -170,9 +205,11 @@ int main(int argc, char *argv[])
     if (argc > 1)
         id = atoi(argv[1]);
 
+    signal(SIGINT, ctrlc);
+
     mapper_device dev = autoConnect();
     if (!dev)
-        return 1;
+        goto done;
 
     float pos[2];
     pos[0] = rand()%WIDTH/2+WIDTH/4;
@@ -181,7 +218,7 @@ int main(int argc, char *argv[])
     float gain = 2;
     float limit = 0.1;
 
-    while (1) {
+    while (!done) {
         if (mdev_poll(dev, 10)) {
             vel[0] -= obs[0] * gain - obs[2] * gain;
             vel[1] -= obs[1] * gain - obs[3] * gain;
@@ -220,6 +257,8 @@ int main(int argc, char *argv[])
             msig_update(sig_y, &p[1]);
         }
     }
+
+done:
     autoDisconnect();
     return 0;
 }
