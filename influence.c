@@ -22,7 +22,7 @@ void on_draw()
     }
 }
 
-void on_signal(mapper_signal msig,
+void on_signal_x(mapper_signal msig,
                mapper_db_signal props,
                mapper_timetag_t *timetag,
                void *value)
@@ -31,7 +31,17 @@ void on_signal(mapper_signal msig,
     mapper_db_signal p = msig_properties(msig);
     int agent = (int)(long)p->user_data;
     agentPos[agent][0] = pos[0];
-    agentPos[agent][1] = pos[1];
+}
+
+void on_signal_y(mapper_signal msig,
+                 mapper_db_signal props,
+                 mapper_timetag_t *timetag,
+                 void *value)
+{
+    int *pos = (int*)value;
+    mapper_db_signal p = msig_properties(msig);
+    int agent = (int)(long)p->user_data;
+    agentPos[agent][1] = pos[0];
 }
 
 void initMapper()
@@ -45,9 +55,13 @@ void initMapper()
     for (i = 0; i < maxAgents; i++)
     {
         char str[256];
-        sprintf(str, "/node/%ld/position", i+1);
-        sigpos[i] = mdev_add_input(dev, str, 2, 'i', 0,
-                                   &mn, &mx, on_signal, (void*)(i));
+        sprintf(str, "/node/%ld/position/x", i+1);
+        sigpos[i] = mdev_add_input(dev, str, 1, 'i', 0,
+                                   &mn, &mx, on_signal_x, (void*)(i));
+        mx = WIDTH;
+        sprintf(str, "/node/%ld/position/y", i+1);
+        sigpos[i] = mdev_add_input(dev, str, 1, 'i', 0,
+                                   &mn, &mx, on_signal_y, (void*)(i));
         sprintf(str, "/node/%ld/observation", i+1);
         sigobs[i] = mdev_add_output(dev, str, 4, 'f', 0,
                                     &fmn, &fmx);

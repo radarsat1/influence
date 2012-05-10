@@ -15,7 +15,7 @@ struct _autoConnectState
     mapper_monitor mon;
 } autoConnectState;
 
-mapper_signal sig = 0;
+mapper_signal sig_x = 0, sig_y = 0;
 
 float obs[5] = {0,0,0,0,0};
 
@@ -26,23 +26,29 @@ int id = 0;
 
 void make_connections()
 {
-    char signame1[1024], signame2[1024],
-        signame3[1024], signame4[1024];
-
+    char signame1[1024], signame2[1024];
     struct _autoConnectState *acs = &autoConnectState;
 
     sprintf(signame1, "%s/node/%d/observation",
             acs->vector_device_name, mdev_ordinal(acs->dev));
 
-    sprintf(signame2, "%s/node/%d/position",
+    sprintf(signame2, "%s/observation", mdev_name(acs->dev));
+
+    mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
+
+    sprintf(signame1, "%s/position/x", mdev_name(acs->dev));
+
+    sprintf(signame2, "%s/node/%d/position/x",
             acs->vector_device_name, mdev_ordinal(acs->dev));
 
-    sprintf(signame3, "%s/observation", mdev_name(acs->dev));
+    mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 
-    sprintf(signame4, "%s/position", mdev_name(acs->dev));
+    sprintf(signame1, "%s/position/y", mdev_name(acs->dev));
 
-    mapper_monitor_connect(acs->mon, signame1, signame3, 0, 0);
-    mapper_monitor_connect(acs->mon, signame4, signame2, 0, 0);
+    sprintf(signame2, "%s/node/%d/position/y",
+            acs->vector_device_name, mdev_ordinal(acs->dev));
+
+    mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 }
 
 void signal_handler(mapper_signal msig,
@@ -86,7 +92,9 @@ void link_db_callback(mapper_db_link record,
         mdev_add_input(acs->dev, "observation", 4, 'f', "norm", &mn, &mx,
                        signal_handler, 0);
         int imn=0, imx=480;
-        sig = mdev_add_output(acs->dev, "position", 2, 'i', 0, &imn, &imx);
+        sig_x = mdev_add_output(acs->dev, "position/x", 1, 'i', 0, &imn, &imx);
+        imn=0; imx=480;
+        sig_y = mdev_add_output(acs->dev, "position/y", 1, 'i', 0, &imn, &imx);
 
         acs->connected = 1;
     }
@@ -208,7 +216,8 @@ int main(int argc, char *argv[])
             int p[2];
             p[0] = (int)pos[0];
             p[1] = (int)pos[1];
-            msig_update(sig, p);
+            msig_update(sig_x, &p[0]);
+            msig_update(sig_y, &p[1]);
         }
     }
     autoDisconnect();
