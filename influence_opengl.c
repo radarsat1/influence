@@ -26,29 +26,11 @@
 
 #include "influence_opengl.h"
 
-const float kernels[] = {0,0,0,0,1,
-                         0,0,1,1,1,
-                         0,0,0,1,1,
-                         0,0,1,1,1,
-                         0,0,0,0,1,
-
-                         0,0,0,0,0,
-                         0,0,0,0,0,
-                         0,1,0,1,0,
-                         0,1,1,1,0,
-                         1,1,1,1,1,
-
-                         1,0,0,0,0,
-                         1,1,1,0,0,
-                         1,1,0,0,0,
-                         1,1,1,0,0,
-                         1,0,0,0,0,
-
-                         1,1,1,1,1,
-                         0,1,1,1,0,
-                         0,1,0,1,0,
-                         0,0,0,0,0,
-                         0,0,0,0,0};
+const float kernels[] = {0.003,0.012,0.021,0.012,0.003,
+                         0.012,0.060,0.100,0.060,0.012,
+                         0.021,0.100,0.166,0.100,0.021,
+                         0.012,0.060,0.100,0.060,0.012,
+                         0.003,0.012,0.021,0.012,0.003};
 
 #ifdef _WIN32
 // As microsoft did not maintain openGL after version 1.1, Windows platform need to go throught this crap ; macosX and Linux are fine.
@@ -234,8 +216,8 @@ void loadFieldShader()
     }
 
     glUseProgramObjectARB(fieldShaderId);
-    glUniform1fvARB(kernelsUniform, 100, kernels);
-    glUniform1fARB(gainUniform, 0.97);
+    glUniform1fvARB(kernelsUniform, 25, kernels);
+    glUniform1fARB(gainUniform, 0.99999);
 }
 
 void generateFBO()
@@ -243,6 +225,10 @@ void generateFBO()
 	//GLfloat borderColor[4] = {0,0,0,0};
 	
 	GLenum FBOstatus;
+
+    glClampColorARB(GL_CLAMP_VERTEX_COLOR_ARB, GL_FALSE);
+    glClampColorARB(GL_CLAMP_READ_COLOR_ARB, GL_FALSE);
+    glClampColorARB(GL_CLAMP_FRAGMENT_COLOR_ARB, GL_FALSE);
 
     int i;
     for (i=0; i<2; i++)
@@ -260,9 +246,9 @@ void generateFBO()
         //glTexParameterfv( GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor );
 	
         // No need to force GL_DEPTH_COMPONENT24, drivers usually give you the max precision if available 
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16,
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA32F_ARB,
                       WIDTH, HEIGHT, 0, GL_RGBA,
-                      GL_UNSIGNED_BYTE, 0);
+                      GL_FLOAT, 0);
     }
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -313,7 +299,7 @@ void update(void)
 void drawFullScreenQuad()
 {
 	// Square
-	glColor4f(0.3f,0.3f,0.3f,1);
+	glColor4f(0.3f,0.3f,0.3f,0.3f);
 	glBegin(GL_QUADS);
     glNormal3f(0,0,1);
     glTexCoord2f(0,0);
@@ -329,13 +315,52 @@ void drawFullScreenQuad()
 
 void drawAgents()
 {
+    float data[5*5*4];
     int i;
-    glColor4f(1,1,1,1);
-    glBegin(GL_POINTS);
     for (i=0; i < maxAgents; i++)
+    {
         if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
-            glVertex2f(agentPos[i][0], agentPos[i][1]);
-    glEnd();
+        {
+            glReadPixels(agentPos[i][0]-2, agentPos[i][1]-3,
+                         5, 5,
+                         GL_RGBA, GL_FLOAT, data);
+            glBegin(GL_POINTS);
+            glColor4f(data[4*4+0+2*5*4]+10,
+                      data[4*4+1+2*5*4],
+                      data[4*4+2+2*5*4],
+                      data[4*4+3+2*5*4]);
+            //glColor4f(0, 0, 10, 0);
+            glVertex2i(agentPos[i][0]+2, agentPos[i][1]);
+            glEnd();
+            
+            glBegin(GL_POINTS);
+            glColor4f(data[2*4+0+4*5*4],
+                      data[2*4+1+4*5*4]+10,
+                      data[2*4+2+4*5*4],
+                      data[2*4+3+4*5*4]);
+            //glColor4f(0, 0, 0, 10);
+            glVertex2f(agentPos[i][0], agentPos[i][1]+2);
+            glEnd();
+            
+            glBegin(GL_POINTS);
+            glColor4f(data[0*4+0+2*5*4]-10,
+                      data[0*4+1+2*5*4],
+                      data[0*4+2+2*5*4],
+                      data[0*4+3+2*5*4]);
+            //glColor4f(10, 0, 0, 0);
+            glVertex2i(agentPos[i][0]-2, agentPos[i][1]);
+            glEnd();
+
+            glBegin(GL_POINTS);
+            glColor4f(data[2*4+0+0*5*4],
+                      data[2*4+1+0*5*4]-10,
+                      data[2*4+2+0*5*4],
+                      data[2*4+3+0*5*4]);
+            //glColor4f(0, 10, 0, 0);
+            glVertex2f(agentPos[i][0], agentPos[i][1]-2);
+            glEnd();
+        }
+    }
 }
 
 void drawBorder()
@@ -346,6 +371,10 @@ void drawBorder()
     glVertex2f(1, HEIGHT-1);
     glVertex2f(1, 1);
     glVertex2f(WIDTH-1, 1);
+    glEnd();
+
+    glColor4f(1,1,1,1);
+    glBegin(GL_LINES);
     glVertex2f(WIDTH-1, HEIGHT-1);
     glVertex2f(1, HEIGHT-1);
     glVertex2f(WIDTH-1, HEIGHT-1);
@@ -355,20 +384,20 @@ void drawBorder()
 
 void updateObservations()
 {
-    float data[5*5*4];
+    float data[4];
     int i;
     for (i=0; i < maxAgents; i++)
     {
         if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
         {
-            glReadPixels(agentPos[i][0]-2, agentPos[i][1]-2,
-                         5, 5,
+            glReadPixels(agentPos[i][0], agentPos[i][1]-1,
+                         1, 1,
                          GL_RGBA, GL_FLOAT, data);
 
-            agentObs[i][0] = data[4*4+0+2*5*4];
-            agentObs[i][1] = data[2*4+1+4*5*4];
-            agentObs[i][2] = data[0*4+2+2*5*4];
-            agentObs[i][3] = data[2*4+3+0*5*4];
+            agentObs[i][0] = data[0];
+            agentObs[i][1] = data[1];
+            agentObs[i][2] = data[2];
+            agentObs[i][3] = data[3];
         }
     }
 }
@@ -397,7 +426,7 @@ void renderScene(void)
 
         // Draw to the source to update agent positions
         glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT + src);
-        drawBorder();
+        //drawBorder();
         drawAgents();
 
         // Draw the shader to destination texture
@@ -498,7 +527,9 @@ void vfgl_Init(int argc, char** argv)
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
 #endif
-	
+    
+	glClearColor(0,0,0,0);
+
 	// This call will grab openGL extension function pointers.
 	// This is not necessary for macosx and linux
 #ifdef _WIN32
@@ -507,7 +538,7 @@ void vfgl_Init(int argc, char** argv)
 	generateFBO();
 	loadFieldShader();
 	
-	glClearColor(0,0,0,1.0f);
+	glClearColor(0,0,0,0);
 
 	glutDisplayFunc(renderScene);
 	//glutIdleFunc(renderScene);

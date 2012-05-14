@@ -215,13 +215,13 @@ int main(int argc, char *argv[])
     pos[0] = rand()%WIDTH/2+WIDTH/4;
     pos[1] = rand()%HEIGHT/2+HEIGHT/4;
     float vel[2] = {0, 0};
-    float gain = 2;
+   // float gain = 2;
     float limit = 0.1;
 
     while (!done) {
         if (mdev_poll(dev, 10)) {
-            vel[0] -= obs[0] * gain - obs[2] * gain;
-            vel[1] -= obs[1] * gain - obs[3] * gain;
+            //vel[0] -= obs[0] * gain - obs[2] * gain;
+            //vel[1] -= obs[1] * gain - obs[3] * gain;
             pos[0] += vel[0];
             pos[1] += vel[1];
 
