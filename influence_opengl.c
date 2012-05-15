@@ -28,6 +28,8 @@
 
 #define Y_OFFSET 0
 
+// TODO: It would be much more efficient to use a 1-d kernel and separate convolution into
+//       2 passes (horizontal & vertical). This means switching between shaders.
 const float kernels[] = {0.003,0.012,0.021,0.012,0.003,
                          0.012,0.060,0.100,0.060,0.012,
                          0.021,0.100,0.166,0.100,0.021,
@@ -318,47 +320,43 @@ void drawFullScreenQuad()
 void drawAgents()
 {
     float data[5*5*4];
+    float gain = 5.0,
+          spin = 0.0;
+    float sin_spin, cos_spin;
     int i;
     for (i=0; i < maxAgents; i++)
     {
         if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
         {
+            // todo: spin should be read from agent data structure
+            sin_spin = sin(spin);
+            cos_spin = cos(spin);
             glReadPixels(agentPos[i][0]-2, agentPos[i][1]-2+Y_OFFSET,
                          5, 5,
                          GL_RGBA, GL_FLOAT, data);
             glBegin(GL_POINTS);
-            glColor4f(data[4*4+0+2*5*4]+1,
-                      data[4*4+1+2*5*4],
-                      data[4*4+2+2*5*4],
-                      data[4*4+3+2*5*4]);
-            //glColor4f(0, 0, 10, 0);
+            glColor4f(data[4*4+0+2*5*4]+cos_spin*gain,
+                      data[4*4+1+2*5*4]+sin_spin*gain,
+                      data[4*4+2+2*5*4]+cos_spin*gain,
+                      data[4*4+3+2*5*4]+sin_spin*gain);
             glVertex2i(agentPos[i][0]+2, agentPos[i][1]);
-            glEnd();
-            
-            glBegin(GL_POINTS);
-            glColor4f(data[2*4+0+4*5*4],
-                      data[2*4+1+4*5*4]+1,
-                      data[2*4+2+4*5*4],
-                      data[2*4+3+4*5*4]);
-            //glColor4f(0, 0, 0, 10);
-            glVertex2f(agentPos[i][0], agentPos[i][1]+2);
-            glEnd();
-            
-            glBegin(GL_POINTS);
-            glColor4f(data[0*4+0+2*5*4]-1,
-                      data[0*4+1+2*5*4],
-                      data[0*4+2+2*5*4],
-                      data[0*4+3+2*5*4]);
-            //glColor4f(10, 0, 0, 0);
-            glVertex2i(agentPos[i][0]-2, agentPos[i][1]);
-            glEnd();
 
-            glBegin(GL_POINTS);
-            glColor4f(data[2*4+0+0*5*4],
-                      data[2*4+1+0*5*4]-1,
-                      data[2*4+2+0*5*4],
-                      data[2*4+3+0*5*4]);
-            //glColor4f(0, 10, 0, 0);
+            glColor4f(data[2*4+0+4*5*4]+sin_spin*-gain,
+                      data[2*4+1+4*5*4]+cos_spin*gain,
+                      data[2*4+2+4*5*4]+sin_spin*-gain,
+                      data[2*4+3+4*5*4]+cos_spin*gain);
+            glVertex2f(agentPos[i][0], agentPos[i][1]+2);
+
+            glColor4f(data[0*4+0+2*5*4]+cos_spin*-gain,
+                      data[0*4+1+2*5*4]+sin_spin*-gain,
+                      data[0*4+2+2*5*4]+cos_spin*-gain,
+                      data[0*4+3+2*5*4]+sin_spin*-gain);
+            glVertex2i(agentPos[i][0]-2, agentPos[i][1]);
+
+            glColor4f(data[2*4+0+0*5*4]+sin_spin*gain,
+                      data[2*4+1+0*5*4]+cos_spin*-gain,
+                      data[2*4+2+0*5*4]+sin_spin*gain,
+                      data[2*4+3+0*5*4]+cos_spin*-gain);
             glVertex2f(agentPos[i][0], agentPos[i][1]-2);
             glEnd();
         }
@@ -367,17 +365,18 @@ void drawAgents()
 
 void drawBorder()
 {
+    float borderGain = 0.2;
     glBegin(GL_LINES);
-    glColor4f(0.5,0,0,0);
+    glColor4f(borderGain,0,borderGain,0);
     glVertex2f(1, 1);
     glVertex2f(1, HEIGHT-1);
-    glColor4f(0,0.5,0,0);
+    glColor4f(0,borderGain,0,borderGain);
     glVertex2f(1, 1);
     glVertex2f(WIDTH-1, 1);
-    glColor4f(-0.5,0,0,0);
+    glColor4f(-borderGain,0,-borderGain,0);
     glVertex2f(WIDTH-1, HEIGHT-1);
     glVertex2f(WIDTH-1, 1);
-    glColor4f(0,-0.5,0,0);
+    glColor4f(0,-borderGain,0,-borderGain);
     glVertex2f(WIDTH-1, HEIGHT-1);
     glVertex2f(1, HEIGHT-1);
     glEnd();
@@ -470,21 +469,18 @@ void renderScene(void)
     }
 
     else {
+        glPointSize(5);
         int i;
+        glColor3f(1,1,1);
+        glBegin(GL_POINTS);
         for (i=0; i < maxAgents; i++)
         {
             if (agentPos[i][0] > -1 && agentPos[i][1] > -1) {
-                int x = agentPos[i][0];
-                int y = agentPos[i][1];
-                glColor3f(1,1,1);
-                glBegin(GL_QUADS);
-                glVertex2f(x-7, y-7);
-                glVertex2f(x+7, y-7);
-                glVertex2f(x+7, y+7);
-                glVertex2f(x-7, y+7);
-                glEnd();
+                glVertex2f(agentPos[i][0], agentPos[i][1]);
             }
         }
+        glEnd();
+        glPointSize(0.5);
     }
 
 	glutSwapBuffers();
@@ -519,7 +515,7 @@ void vfgl_Init(int argc, char** argv)
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
 	glutInitWindowPosition(100,100);
 	glutInitWindowSize(WIDTH,HEIGHT);
-	glutCreateWindow("GLSL Shadow mapping");
+	glutCreateWindow("Influence");
 
 #ifdef GLEW_VERSION
     GLenum err = glewInit();

@@ -215,8 +215,8 @@ int main(int argc, char *argv[])
     pos[0] = rand()%WIDTH/2+WIDTH/4;
     pos[1] = rand()%HEIGHT/2+HEIGHT/4;
     float vel[2] = {0, 0};
-    float gain = 1;
-    float damping = 1;
+    float gain = 0.9;
+    float damping = 0.99;
     float limit = 1;
 
     while (!done) {
