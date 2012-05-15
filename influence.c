@@ -47,7 +47,7 @@ void on_signal_y(mapper_signal msig,
 void initMapper()
 {
     long i;
-    int mn = 0, mx = HEIGHT;
+    int mn = 0, mxx = WIDTH, mxy = HEIGHT;
     float fmn = 0, fmx = 1.0;
 
     dev = mdev_new("vector", 9000, 0);
@@ -57,11 +57,10 @@ void initMapper()
         char str[256];
         sprintf(str, "/node/%ld/position/x", i+1);
         sigpos[i] = mdev_add_input(dev, str, 1, 'i', 0,
-                                   &mn, &mx, on_signal_x, (void*)(i));
-        mx = WIDTH;
+                                   &mn, &mxx, on_signal_x, (void*)(i));
         sprintf(str, "/node/%ld/position/y", i+1);
         sigpos[i] = mdev_add_input(dev, str, 1, 'i', 0,
-                                   &mn, &mx, on_signal_y, (void*)(i));
+                                   &mn, &mxy, on_signal_y, (void*)(i));
         sprintf(str, "/node/%ld/observation", i+1);
         sigobs[i] = mdev_add_output(dev, str, 4, 'f', 0,
                                     &fmn, &fmx);

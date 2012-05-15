@@ -26,6 +26,8 @@
 
 #include "influence_opengl.h"
 
+#define Y_OFFSET 0
+
 const float kernels[] = {0.003,0.012,0.021,0.012,0.003,
                          0.012,0.060,0.100,0.060,0.012,
                          0.021,0.100,0.166,0.100,0.021,
@@ -321,11 +323,11 @@ void drawAgents()
     {
         if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
         {
-            glReadPixels(agentPos[i][0]-2, agentPos[i][1]-3,
+            glReadPixels(agentPos[i][0]-2, agentPos[i][1]-2+Y_OFFSET,
                          5, 5,
                          GL_RGBA, GL_FLOAT, data);
             glBegin(GL_POINTS);
-            glColor4f(data[4*4+0+2*5*4]+10,
+            glColor4f(data[4*4+0+2*5*4]+1,
                       data[4*4+1+2*5*4],
                       data[4*4+2+2*5*4],
                       data[4*4+3+2*5*4]);
@@ -335,7 +337,7 @@ void drawAgents()
             
             glBegin(GL_POINTS);
             glColor4f(data[2*4+0+4*5*4],
-                      data[2*4+1+4*5*4]+10,
+                      data[2*4+1+4*5*4]+1,
                       data[2*4+2+4*5*4],
                       data[2*4+3+4*5*4]);
             //glColor4f(0, 0, 0, 10);
@@ -343,7 +345,7 @@ void drawAgents()
             glEnd();
             
             glBegin(GL_POINTS);
-            glColor4f(data[0*4+0+2*5*4]-10,
+            glColor4f(data[0*4+0+2*5*4]-1,
                       data[0*4+1+2*5*4],
                       data[0*4+2+2*5*4],
                       data[0*4+3+2*5*4]);
@@ -353,7 +355,7 @@ void drawAgents()
 
             glBegin(GL_POINTS);
             glColor4f(data[2*4+0+0*5*4],
-                      data[2*4+1+0*5*4]-10,
+                      data[2*4+1+0*5*4]-1,
                       data[2*4+2+0*5*4],
                       data[2*4+3+0*5*4]);
             //glColor4f(0, 10, 0, 0);
@@ -365,20 +367,19 @@ void drawAgents()
 
 void drawBorder()
 {
-    glColor4f(1,1,1,1);
     glBegin(GL_LINES);
+    glColor4f(0.5,0,0,0);
     glVertex2f(1, 1);
     glVertex2f(1, HEIGHT-1);
+    glColor4f(0,0.5,0,0);
     glVertex2f(1, 1);
     glVertex2f(WIDTH-1, 1);
-    glEnd();
-
-    glColor4f(1,1,1,1);
-    glBegin(GL_LINES);
-    glVertex2f(WIDTH-1, HEIGHT-1);
-    glVertex2f(1, HEIGHT-1);
+    glColor4f(-0.5,0,0,0);
     glVertex2f(WIDTH-1, HEIGHT-1);
     glVertex2f(WIDTH-1, 1);
+    glColor4f(0,-0.5,0,0);
+    glVertex2f(WIDTH-1, HEIGHT-1);
+    glVertex2f(1, HEIGHT-1);
     glEnd();
 }
 
@@ -390,7 +391,7 @@ void updateObservations()
     {
         if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
         {
-            glReadPixels(agentPos[i][0], agentPos[i][1]-1,
+            glReadPixels(agentPos[i][0], agentPos[i][1]+Y_OFFSET,
                          1, 1,
                          GL_RGBA, GL_FLOAT, data);
 
@@ -426,7 +427,7 @@ void renderScene(void)
 
         // Draw to the source to update agent positions
         glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT + src);
-        //drawBorder();
+        drawBorder();
         drawAgents();
 
         // Draw the shader to destination texture
