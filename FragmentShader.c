@@ -5,25 +5,18 @@ uniform float gain;
 
 void main()
 {
-    vec4 t;
-    float a = kernels[0] * 0.0;
-    t = texture2D(field,
-                   vec2((gl_FragCoord.x)/640.0,
-                        (gl_FragCoord.y)/480.0));
-    t += texture2D(field,
-                  vec2((gl_FragCoord.x-1.0)/640.0,
-                       (gl_FragCoord.y)/480.0));
-    t += texture2D(field,
-                   vec2((gl_FragCoord.x+1.0)/640.0,
-                        (gl_FragCoord.y)/480.0));
-    t += texture2D(field,
-                   vec2((gl_FragCoord.x)/640.0,
-                        (gl_FragCoord.y-1.0)/480.0));
-    t += texture2D(field,
-                   vec2((gl_FragCoord.x)/640.0,
-                        (gl_FragCoord.y+1.0)/480.0));
- 
-    t *= vec4(gain * 0.2 + a);
+    int i,j;
+    vec4 t,a=vec4(0,0,0,0);
+    for (i=0; i<5; i++) {
+        for (j=0; j<5; j++) {
+            t = texture2D(field,
+                          vec2((gl_FragCoord.x+float(i)-2.0)/640.0,
+                               (gl_FragCoord.y+float(j)-2.0)/480.0));
+            t *= kernels[i+j*5];
+            a += t;
+        }
+    }
+    a *= vec4(gain);
 
-    gl_FragColor = t;
+    gl_FragColor = a;
 }
