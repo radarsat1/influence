@@ -22,6 +22,15 @@ void on_draw()
     }
 }
 
+void on_signal_border_gain(mapper_signal msig,
+                           mapper_db_signal props,
+                           mapper_timetag_t *timetag,
+                           void *value)
+{
+    float *gain = (float*)value;
+    borderGain = *gain;
+}
+
 void on_signal_x(mapper_signal msig,
                mapper_db_signal props,
                mapper_timetag_t *timetag,
@@ -114,6 +123,8 @@ void initMapper()
         sprintf(str, "/node/%ld/observation", i+1);
         sigobs[i] = mdev_add_output(dev, str, 4, 'f', 0,
                                     &fmn, &fmx);
+        mdev_add_input(dev, "/border_gain", 1, 'f', 0,
+                       &fmn, &fmx, on_signal_border_gain, 0);
         sprintf(str, "/node/%ld/position/x", i+1);
         mdev_add_input(dev, str, 1, 'i', 0,
                        &mn, &mxx, on_signal_x, (void*)(i));

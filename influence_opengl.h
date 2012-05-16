@@ -18,7 +18,7 @@ struct _agent
 } agent;
 
 extern struct _agent agents[];
-
+extern float borderGain;
 extern void (*vfgl_DrawCallback)();
 
 #define WIDTH 640.0

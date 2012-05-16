@@ -104,6 +104,7 @@ GLuint src = 0, dest = 1;
 int update_rate = 100;
 
 struct _agent agents[maxAgents];
+float borderGain = 1;
 
 int showField = 0;
 
@@ -372,7 +373,6 @@ void drawAgents()
 
 void drawBorder()
 {
-    float borderGain = 5.0;
     glBegin(GL_LINES);
     glColor4f(borderGain,0,-borderGain,0);
     glVertex2f(1, 1);
