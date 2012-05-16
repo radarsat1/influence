@@ -10,8 +10,8 @@ void main()
     for (i=0; i<5; i++) {
         for (j=0; j<5; j++) {
             t = texture2D(field,
-                          vec2((gl_FragCoord.x+float(i)-2.0)/640.0,
-                               (gl_FragCoord.y+float(j)-2.0)/480.0));
+                          vec2((gl_FragCoord.x+float(i)-2.0)/500.0,
+                               (gl_FragCoord.y+float(j)-2.0)/500.0));
             t *= kernels[i+j*5];
             a += t;
         }

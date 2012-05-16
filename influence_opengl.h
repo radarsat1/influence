@@ -21,7 +21,7 @@ extern struct _agent agents[];
 extern float borderGain;
 extern void (*vfgl_DrawCallback)();
 
-#define WIDTH 640.0
-#define HEIGHT 480.0
+#define WIDTH 500.0
+#define HEIGHT 500.0
 
 #endif // _VFGL_H_

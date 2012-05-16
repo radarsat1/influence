@@ -31,7 +31,7 @@ void on_signal_border_gain(mapper_signal msig,
     borderGain = *gain;
 }
 
-void on_signal_x(mapper_signal msig,
+void on_signal(mapper_signal msig,
                mapper_db_signal props,
                mapper_timetag_t *timetag,
                void *value)
@@ -40,17 +40,7 @@ void on_signal_x(mapper_signal msig,
     mapper_db_signal p = msig_properties(msig);
     int index = (int)(long)p->user_data;
     agents[index].pos[0] = pos[0];
-}
-
-void on_signal_y(mapper_signal msig,
-                 mapper_db_signal props,
-                 mapper_timetag_t *timetag,
-                 void *value)
-{
-    int *pos = (int*)value;
-    mapper_db_signal p = msig_properties(msig);
-    int index = (int)(long)p->user_data;
-    agents[index].pos[1] = pos[0];
+    agents[index].pos[1] = pos[1];
 }
 
 void on_signal_gain(mapper_signal msig,
@@ -112,25 +102,24 @@ void on_signal_flow(mapper_signal msig,
 void initMapper()
 {
     long i;
-    int mn = 0, mxx = WIDTH, mxy = HEIGHT;
+    int mn = 0, mx = WIDTH;
     float fmn = 0, fmx = 1.0;
 
     dev = mdev_new("vector", 9000, 0);
 
     for (i = 0; i < maxAgents; i++)
     {
+        fmn = -1.0, fmx = 1.0;
         char str[256];
         sprintf(str, "/node/%ld/observation", i+1);
-        sigobs[i] = mdev_add_output(dev, str, 4, 'f', 0,
+        sigobs[i] = mdev_add_output(dev, str, 2, 'f', 0,
                                     &fmn, &fmx);
+        fmn = 0.0;
         mdev_add_input(dev, "/border_gain", 1, 'f', 0,
                        &fmn, &fmx, on_signal_border_gain, 0);
-        sprintf(str, "/node/%ld/position/x", i+1);
-        mdev_add_input(dev, str, 1, 'i', 0,
-                       &mn, &mxx, on_signal_x, (void*)(i));
-        sprintf(str, "/node/%ld/position/y", i+1);
-        mdev_add_input(dev, str, 1, 'i', 0,
-                       &mn, &mxy, on_signal_y, (void*)(i));
+        sprintf(str, "/node/%ld/position", i+1);
+        mdev_add_input(dev, str, 2, 'i', 0,
+                       &mn, &mx, on_signal, (void*)(i));
         sprintf(str, "/node/%ld/gain", i+1);
         mdev_add_input(dev, str, 1, 'f', 0,
                        &fmn, &fmx, on_signal_gain, (void*)(i));
@@ -144,7 +133,7 @@ void initMapper()
                        &fmn, &fmx, on_signal_spin, (void*)(i));
         fmn = -3.1415926;
         fmx = 3.1415926;
-        sprintf(str, "/node/%ld/dir", i+1);
+        sprintf(str, "/node/%ld/direction", i+1);
         mdev_add_input(dev, str, 1, 'f', 0,
                        &fmn, &fmx, on_signal_dir, (void*)(i));
         fmn = -1.0;

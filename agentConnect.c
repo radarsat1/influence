@@ -16,8 +16,7 @@ struct _autoConnectState
     mapper_monitor mon;
 } autoConnectState;
 
-mapper_signal sig_x = 0,
-              sig_y = 0,
+mapper_signal sig_pos = 0,
               sig_gain = 0,
               sig_spin = 0,
               sig_fade = 0,
@@ -26,8 +25,8 @@ mapper_signal sig_x = 0,
 
 float obs[5] = {0,0,0,0,0};
 
-#define WIDTH  640
-#define HEIGHT 480
+#define WIDTH  500
+#define HEIGHT 500
 
 int id = 0;
 int done = 0;
@@ -44,26 +43,14 @@ void make_connections()
 
     mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 
-    sprintf(signame1, "%s/position/x", mdev_name(acs->dev));
+    sprintf(signame1, "%s/position", mdev_name(acs->dev));
 
-    sprintf(signame2, "%s/node/%d/position/x",
+    sprintf(signame2, "%s/node/%d/position",
             acs->vector_device_name, mdev_ordinal(acs->dev));
 
     mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 
-    sprintf(signame2, "%s/X_Butterfly%d",
-            acs->xagora_device_name, mdev_ordinal(acs->dev));
-
-    mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
-
-    sprintf(signame1, "%s/position/y", mdev_name(acs->dev));
-
-    sprintf(signame2, "%s/node/%d/position/y",
-            acs->vector_device_name, mdev_ordinal(acs->dev));
-
-    mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
-
-    sprintf(signame2, "%s/Z_Butterfly%d",
+    sprintf(signame2, "%s/Butterfly%d",
             acs->xagora_device_name, mdev_ordinal(acs->dev));
 
     mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
@@ -74,9 +61,9 @@ void signal_handler(mapper_signal msig,
                     mapper_timetag_t *timetag,
                     void *value)
 {
-    memcpy(obs, value, sizeof(float)*4);
-    printf("observation: %f, %f, %f, %f\n",
-           obs[0], obs[1], obs[2], obs[3]);
+    memcpy(obs, value, sizeof(float)*2);
+    printf("observation: %f, %f\n",
+           obs[0], obs[1]);
 }
 
 void link_db_callback(mapper_db_link record,
@@ -108,13 +95,11 @@ void link_db_callback(mapper_db_link record,
 
     if (acs->seen_srcdest_link && acs->seen_destsrc_link)
     {
-        float mn=0, mx=1;
-        mdev_add_input(acs->dev, "observation", 4, 'f', "norm", &mn, &mx,
+        float mn=-1, mx=1;
+        mdev_add_input(acs->dev, "observation", 2, 'f', "norm", &mn, &mx,
                        signal_handler, 0);
         int imn=0, imx=WIDTH;
-        sig_x = mdev_add_output(acs->dev, "position/x", 1, 'i', 0, &imn, &imx);
-        imn=0; imx=HEIGHT;
-        sig_y = mdev_add_output(acs->dev, "position/y", 1, 'i', 0, &imn, &imx);
+        sig_pos = mdev_add_output(acs->dev, "position", 2, 'i', 0, &imn, &imx);
         sig_gain = mdev_add_output(acs->dev, "gain", 1, 'f',
                                    "normalized", &mn, &mx);
         sig_fade = mdev_add_output(acs->dev, "fade", 1, 'f', "normalized", &mn, &mx);
@@ -128,7 +113,7 @@ void link_db_callback(mapper_db_link record,
         sig_flow = mdev_add_output(acs->dev, "flow", 1, 'f', "noramlized", &mn, &mx);
         
 
-        if (sig_x && sig_y)
+        if (sig_pos)
             acs->connected = 1;
     }
 }
@@ -232,15 +217,15 @@ int main(int argc, char *argv[])
     float pos[2];
     pos[0] = rand()%WIDTH/2+WIDTH/4;
     pos[1] = rand()%HEIGHT/2+HEIGHT/4;
-    float gain = 0.01;
+    float gain = 0.2;
     float damping = 0.9;
     float limit = 1;
     float vel[2] = {0,0};
 
     while (!done) {
         if (mdev_poll(dev, 10)) {
-            vel[0] += (obs[0] - obs[2]) * gain;
-            vel[1] += (obs[1] - obs[3]) * gain;
+            vel[0] += obs[0] * gain;
+            vel[1] += obs[1] * gain;
             pos[0] += vel[0];
             pos[1] += vel[1];
             vel[0] *= damping;
@@ -274,8 +259,7 @@ int main(int argc, char *argv[])
             int p[2];
             p[0] = (int)pos[0];
             p[1] = (int)pos[1];
-            msig_update(sig_x, &p[0]);
-            msig_update(sig_y, &p[1]);
+            msig_update(sig_pos, p);
         }
     }
 

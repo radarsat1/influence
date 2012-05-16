@@ -104,7 +104,7 @@ GLuint src = 0, dest = 1;
 int update_rate = 100;
 
 struct _agent agents[maxAgents];
-float borderGain = 1;
+float borderGain = 5;
 
 int showField = 0;
 
@@ -494,11 +494,13 @@ void vfgl_Init(int argc, char** argv)
 {
     int i;
     for (i=0; i < maxAgents; i++) {
-        agents[i].pos[0] = agents[i].pos[1] = -1;
+        agents[i].pos[0] = -1;//(int)fmod(rand(), WIDTH);
+        agents[i].pos[1] = -1;//(int)fmod(rand(), HEIGHT);
         agents[i].gain = 5;
         agents[i].spin = 0;
         agents[i].fade = 0;
-        agents[i].dir[0] = agents[i].dir[1] = 0;
+        agents[i].dir[0] = 1;
+        agents[i].dir[1] = 0;
         agents[i].flow = 0;
     }
 
