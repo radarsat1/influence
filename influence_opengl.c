@@ -282,34 +282,32 @@ void drawAgents()
             glBegin(GL_POINTS);
             glColor4f(data[4*4+0+2*5*4]+cos_spin*gain*(1-flow)+dir[0]*flow,
                       data[4*4+1+2*5*4]+sin_spin*gain*(1-flow)+dir[1]*flow,
-                      data[4*4+2+2*5*4]+cos_spin*-gain*(1-flow)-dir[0]*flow,
-                      data[4*4+3+2*5*4]+sin_spin*-gain*(1-flow)-dir[1]*flow);
+                      fmax(data[4*4+2+2*5*4],agents[i].fade),
+                      0);
             glVertex2i(agents[i].pos[0]+2, agents[i].pos[1]);
 
             glColor4f(data[2*4+0+4*5*4]+sin_spin*-gain*(1-flow)+dir[0]*flow,
                       data[2*4+1+4*5*4]+cos_spin*gain*(1-flow)+dir[1]*flow,
-                      data[2*4+2+4*5*4]+sin_spin*gain*(1-flow)-dir[0]*flow,
-                      data[2*4+3+4*5*4]+cos_spin*-gain*(1-flow)-dir[1]*flow);
+                      fmax(data[2*4+2+4*5*4],agents[i].fade),
+                      0);
             glVertex2f(agents[i].pos[0], agents[i].pos[1]+2);
 
             glColor4f(data[0*4+0+2*5*4]+cos_spin*-gain*(1-flow)+dir[0]*flow,
                       data[0*4+1+2*5*4]+sin_spin*-gain*(1-flow)+dir[1]*flow,
-                      data[0*4+2+2*5*4]+cos_spin*gain*(1-flow)-dir[0]*flow,
-                      data[0*4+3+2*5*4]+sin_spin*gain*(1-flow)-dir[1]*flow);
+                      fmax(data[0*4+2+2*5*4],agents[i].fade),
+                      0);
             glVertex2i(agents[i].pos[0]-2, agents[i].pos[1]);
 
             glColor4f(data[2*4+0+0*5*4]+sin_spin*gain*(1-flow)+dir[0]*flow,
                       data[2*4+1+0*5*4]+cos_spin*-gain*(1-flow)+dir[1]*flow,
-                      data[2*4+2+0*5*4]+sin_spin*-gain*(1-flow)-dir[0]*flow,
-                      data[2*4+3+0*5*4]+cos_spin*gain*(1-flow)-dir[1]*flow);
+                      fmax(data[2*4+2+0*5*4],agents[i].fade),
+                      0);
             glVertex2f(agents[i].pos[0], agents[i].pos[1]-2);
             glEnd();
 
             // we will read agent environment here for efficicency
             agents[i].obs[0] = data[2*4+0+2*5*4];
             agents[i].obs[1] = data[2*4+1+2*5*4];
-            agents[i].obs[2] = data[2*4+2+2*5*4];
-            agents[i].obs[3] = data[2*4+3+2*5*4];
         }
     }
 }
@@ -364,7 +362,7 @@ void renderScene(void)
         // Draw the shader to destination texture
         glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT + dest);
 
-        glClear(GL_COLOR_BUFFER_BIT);
+        //glClear(GL_COLOR_BUFFER_BIT);
 
         //Using the field shader
         glUseProgramObjectARB(fieldShaderId);
