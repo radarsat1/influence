@@ -373,6 +373,8 @@ void drawAgents()
 
 void drawBorder()
 {
+    if (!borderGain)
+        return;
     glBegin(GL_LINES);
     glColor4f(borderGain,0,-borderGain,0);
     glVertex2f(1, 1);
