@@ -16,7 +16,13 @@ struct _autoConnectState
     mapper_monitor mon;
 } autoConnectState;
 
-mapper_signal sig_x = 0, sig_y = 0;
+mapper_signal sig_x = 0,
+              sig_y = 0,
+              sig_gain = 0,
+              sig_spin = 0,
+              sig_fade = 0,
+              sig_dir = 0,
+              sig_flow = 0;
 
 float obs[5] = {0,0,0,0,0};
 
@@ -109,6 +115,18 @@ void link_db_callback(mapper_db_link record,
         sig_x = mdev_add_output(acs->dev, "position/x", 1, 'i', 0, &imn, &imx);
         imn=0; imx=HEIGHT;
         sig_y = mdev_add_output(acs->dev, "position/y", 1, 'i', 0, &imn, &imx);
+        sig_gain = mdev_add_output(acs->dev, "gain", 1, 'f',
+                                   "normalized", &mn, &mx);
+        sig_fade = mdev_add_output(acs->dev, "fade", 1, 'f', "normalized", &mn, &mx);
+        mn = -1.5;
+        mx = 1.5;
+        sig_spin = mdev_add_output(acs->dev, "spin", 1, 'f', "radians", &mn, &mx);
+        mn = -3.1415926;
+        mx = 3.1315926;
+        sig_dir = mdev_add_output(acs->dev, "direction", 1, 'f', "radians", &mn, &mx);
+        mn = -1;
+        sig_flow = mdev_add_output(acs->dev, "flow", 1, 'f', "noramlized", &mn, &mx);
+        
 
         if (sig_x && sig_y)
             acs->connected = 1;
@@ -214,15 +232,15 @@ int main(int argc, char *argv[])
     float pos[2];
     pos[0] = rand()%WIDTH/2+WIDTH/4;
     pos[1] = rand()%HEIGHT/2+HEIGHT/4;
-    float vel[2] = {0, 0};
-    float gain = 0.9;
-    float damping = 0.99;
+    float gain = 0.01;
+    float damping = 0.9;
     float limit = 1;
+    float vel[2] = {0,0};
 
     while (!done) {
         if (mdev_poll(dev, 10)) {
-            vel[0] += obs[0] * gain;
-            vel[1] += obs[1] * gain;
+            vel[0] += (obs[0] - obs[2]) * gain;
+            vel[1] += (obs[1] - obs[3]) * gain;
             pos[0] += vel[0];
             pos[1] += vel[1];
             vel[0] *= damping;

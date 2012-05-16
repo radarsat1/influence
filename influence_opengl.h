@@ -6,8 +6,18 @@ void vfgl_Init(int argc, char** argv);
 void vfgl_Run();
 
 #define maxAgents 20
-extern float agentObs[][4];
-extern int agentPos[][2];
+struct _agent
+{
+    float   obs[4];
+    int     pos[2];
+    float   gain;
+    float   spin;
+    float   fade;
+    float   dir;
+    float   flow;
+} agent;
+
+extern struct _agent agents[];
 
 extern void (*vfgl_DrawCallback)();
 

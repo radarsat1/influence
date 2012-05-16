@@ -103,8 +103,7 @@ GLuint gainUniform;
 GLuint src = 0, dest = 1;
 int update_rate = 100;
 
-float agentObs[maxAgents][4];
-int agentPos[maxAgents][2];
+struct _agent agents[maxAgents];
 
 int showField = 0;
 
@@ -320,86 +319,71 @@ void drawFullScreenQuad()
 void drawAgents()
 {
     float data[5*5*4];
-    float gain = 5.0,
-          spin = 0.0;
-    float sin_spin, cos_spin;
+    float gain, sin_spin, cos_spin;
     int i;
     for (i=0; i < maxAgents; i++)
     {
-        if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
+        if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1)
         {
             // todo: spin should be read from agent data structure
-            sin_spin = sin(spin);
-            cos_spin = cos(spin);
-            glReadPixels(agentPos[i][0]-2, agentPos[i][1]-2+Y_OFFSET,
-                         5, 5,
+            sin_spin = sin(agents[i].spin);
+            cos_spin = cos(agents[i].spin);
+            gain = agents[i].gain;
+            glReadPixels(agents[i].pos[0]-1, agents[i].pos[1]-1+Y_OFFSET,
+                         3, 3,
                          GL_RGBA, GL_FLOAT, data);
             glBegin(GL_POINTS);
-            glColor4f(data[4*4+0+2*5*4]+cos_spin*gain,
-                      data[4*4+1+2*5*4]+sin_spin*gain,
-                      data[4*4+2+2*5*4]+cos_spin*gain,
-                      data[4*4+3+2*5*4]+sin_spin*gain);
-            glVertex2i(agentPos[i][0]+2, agentPos[i][1]);
+            glColor4f(data[2*4+0+1*3*4]+cos_spin*gain,
+                      data[2*4+1+1*3*4]+sin_spin*gain,
+                      data[2*4+2+1*3*4]+cos_spin*-gain,
+                      data[2*4+3+1*3*4]+sin_spin*-gain);
+            glVertex2i(agents[i].pos[0]+1, agents[i].pos[1]);
 
-            glColor4f(data[2*4+0+4*5*4]+sin_spin*-gain,
-                      data[2*4+1+4*5*4]+cos_spin*gain,
-                      data[2*4+2+4*5*4]+sin_spin*-gain,
-                      data[2*4+3+4*5*4]+cos_spin*gain);
-            glVertex2f(agentPos[i][0], agentPos[i][1]+2);
+            glColor4f(data[1*4+0+2*3*4]+sin_spin*-gain,
+                      data[1*4+1+2*3*4]+cos_spin*gain,
+                      data[1*4+2+2*3*4]+sin_spin*gain,
+                      data[1*4+3+2*3*4]+cos_spin*-gain);
+            glVertex2f(agents[i].pos[0], agents[i].pos[1]+1);
 
-            glColor4f(data[0*4+0+2*5*4]+cos_spin*-gain,
-                      data[0*4+1+2*5*4]+sin_spin*-gain,
-                      data[0*4+2+2*5*4]+cos_spin*-gain,
-                      data[0*4+3+2*5*4]+sin_spin*-gain);
-            glVertex2i(agentPos[i][0]-2, agentPos[i][1]);
+            glColor4f(data[0*4+0+1*3*4]+cos_spin*-gain,
+                      data[0*4+1+1*3*4]+sin_spin*-gain,
+                      data[0*4+2+1*3*4]+cos_spin*gain,
+                      data[0*4+3+1*3*4]+sin_spin*gain);
+            glVertex2i(agents[i].pos[0]-1, agents[i].pos[1]);
 
-            glColor4f(data[2*4+0+0*5*4]+sin_spin*gain,
-                      data[2*4+1+0*5*4]+cos_spin*-gain,
-                      data[2*4+2+0*5*4]+sin_spin*gain,
-                      data[2*4+3+0*5*4]+cos_spin*-gain);
-            glVertex2f(agentPos[i][0], agentPos[i][1]-2);
+            glColor4f(data[1*4+0+0*3*4]+sin_spin*gain,
+                      data[1*4+1+0*3*4]+cos_spin*-gain,
+                      data[1*4+2+0*3*4]+sin_spin*-gain,
+                      data[1*4+3+0*3*4]+cos_spin*gain);
+            glVertex2f(agents[i].pos[0], agents[i].pos[1]-1);
             glEnd();
+
+            // we will read agent environment here for efficicency
+            agents[i].obs[0] = data[1*4+0+1*3*4];
+            agents[i].obs[1] = data[1*4+1+1*3*4];
+            agents[i].obs[2] = data[1*4+2+1*3*4];
+            agents[i].obs[3] = data[1*4+3+1*3*4];
         }
     }
 }
 
 void drawBorder()
 {
-    float borderGain = 0.2;
+    float borderGain = 5.0;
     glBegin(GL_LINES);
-    glColor4f(borderGain,0,borderGain,0);
+    glColor4f(borderGain,0,-borderGain,0);
     glVertex2f(1, 1);
     glVertex2f(1, HEIGHT-1);
-    glColor4f(0,borderGain,0,borderGain);
+    glColor4f(0,borderGain,0,-borderGain);
     glVertex2f(1, 1);
     glVertex2f(WIDTH-1, 1);
-    glColor4f(-borderGain,0,-borderGain,0);
+    glColor4f(-borderGain,0,borderGain,0);
     glVertex2f(WIDTH-1, HEIGHT-1);
     glVertex2f(WIDTH-1, 1);
-    glColor4f(0,-borderGain,0,-borderGain);
+    glColor4f(0,-borderGain,0,borderGain);
     glVertex2f(WIDTH-1, HEIGHT-1);
     glVertex2f(1, HEIGHT-1);
     glEnd();
-}
-
-void updateObservations()
-{
-    float data[4];
-    int i;
-    for (i=0; i < maxAgents; i++)
-    {
-        if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
-        {
-            glReadPixels(agentPos[i][0], agentPos[i][1]+Y_OFFSET,
-                         1, 1,
-                         GL_RGBA, GL_FLOAT, data);
-
-            agentObs[i][0] = data[0];
-            agentObs[i][1] = data[1];
-            agentObs[i][2] = data[2];
-            agentObs[i][3] = data[3];
-        }
-    }
 }
 
 void renderScene(void) 
@@ -445,10 +429,6 @@ void renderScene(void)
         glUseProgramObjectARB(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
-
-    // Read observations from destination texture
-    glReadBuffer(GL_COLOR_ATTACHMENT0_EXT + dest);
-    updateObservations();
 	
     // Draw quad to the screen in the corner
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
@@ -475,8 +455,8 @@ void renderScene(void)
         glBegin(GL_POINTS);
         for (i=0; i < maxAgents; i++)
         {
-            if (agentPos[i][0] > -1 && agentPos[i][1] > -1) {
-                glVertex2f(agentPos[i][0], agentPos[i][1]);
+            if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
+                glVertex2f(agents[i].pos[0], agents[i].pos[1]);
             }
         }
         glEnd();
@@ -508,8 +488,14 @@ void onTimer(int value)
 void vfgl_Init(int argc, char** argv)
 {
     int i;
-    for (i=0; i < maxAgents; i++)
-        agentPos[i][0] = agentPos[i][1] = -1;
+    for (i=0; i < maxAgents; i++) {
+        agents[i].pos[0] = agents[i].pos[1] = -1;
+        agents[i].gain = 5;
+        agents[i].spin = 0;
+        agents[i].fade = 0;
+        agents[i].dir = 0;
+        agents[i].flow = 0;
+    }
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
