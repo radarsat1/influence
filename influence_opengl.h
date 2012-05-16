@@ -6,12 +6,22 @@ void vfgl_Init(int argc, char** argv);
 void vfgl_Run();
 
 #define maxAgents 20
-extern float agentObs[][4];
-extern int agentPos[][2];
+struct _agent
+{
+    float   obs[4];
+    int     pos[2];
+    float   gain;
+    float   spin;
+    float   fade;
+    float   dir[2];
+    float   flow;
+} agent;
 
+extern struct _agent agents[];
+extern float borderGain;
 extern void (*vfgl_DrawCallback)();
 
-#define WIDTH 640.0
-#define HEIGHT 480.0
+#define WIDTH 500.0
+#define HEIGHT 500.0
 
 #endif // _VFGL_H_

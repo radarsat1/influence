@@ -22,29 +22,15 @@
 
 #include "influence_opengl.h"
 
-const float kernels[] = {0,0,0,0,1,
-                         0,0,1,1,1,
-                         0,0,0,1,1,
-                         0,0,1,1,1,
-                         0,0,0,0,1,
+#define Y_OFFSET 0
 
-                         0,0,0,0,0,
-                         0,0,0,0,0,
-                         0,1,0,1,0,
-                         0,1,1,1,0,
-                         1,1,1,1,1,
-
-                         1,0,0,0,0,
-                         1,1,1,0,0,
-                         1,1,0,0,0,
-                         1,1,1,0,0,
-                         1,0,0,0,0,
-
-                         1,1,1,1,1,
-                         0,1,1,1,0,
-                         0,1,0,1,0,
-                         0,0,0,0,0,
-                         0,0,0,0,0};
+// TODO: It would be much more efficient to use a 1-d kernel and separate convolution into
+//       2 passes (horizontal & vertical). This means switching between shaders.
+const float kernels[] = {0.003,0.012,0.021,0.012,0.003,
+                         0.012,0.060,0.100,0.060,0.012,
+                         0.021,0.100,0.166,0.100,0.021,
+                         0.012,0.060,0.100,0.060,0.012,
+                         0.003,0.012,0.021,0.012,0.003};
 
 // Hold id of the framebuffer for light POV rendering
 GLuint fboId;
@@ -60,8 +46,8 @@ GLuint gainUniform;
 GLuint src = 0, dest = 1;
 int update_rate = 100;
 
-float agentObs[maxAgents][4];
-int agentPos[maxAgents][2];
+struct _agent agents[maxAgents];
+float borderGain = 5;
 
 int showField = 0;
 
@@ -177,8 +163,8 @@ void loadFieldShader()
     }
 
     glUseProgramObjectARB(fieldShaderId);
-    glUniform1fvARB(kernelsUniform, 100, kernels);
-    glUniform1fARB(gainUniform, 0.97);
+    glUniform1fvARB(kernelsUniform, 25, kernels);
+    glUniform1fARB(gainUniform, 0.99999);
 }
 
 void generateFBO()
@@ -186,6 +172,10 @@ void generateFBO()
 	//GLfloat borderColor[4] = {0,0,0,0};
 	
 	GLenum FBOstatus;
+
+    glClampColorARB(GL_CLAMP_VERTEX_COLOR_ARB, GL_FALSE);
+    glClampColorARB(GL_CLAMP_READ_COLOR_ARB, GL_FALSE);
+    glClampColorARB(GL_CLAMP_FRAGMENT_COLOR_ARB, GL_FALSE);
 
     int i;
     for (i=0; i<2; i++)
@@ -203,9 +193,9 @@ void generateFBO()
         //glTexParameterfv( GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor );
 	
         // No need to force GL_DEPTH_COMPONENT24, drivers usually give you the max precision if available 
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16,
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA32F_ARB,
                       WIDTH, HEIGHT, 0, GL_RGBA,
-                      GL_UNSIGNED_BYTE, 0);
+                      GL_FLOAT, 0);
     }
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -256,7 +246,7 @@ void update(void)
 void drawFullScreenQuad()
 {
 	// Square
-	glColor4f(0.3f,0.3f,0.3f,1);
+	glColor4f(0.3f,0.3f,0.3f,0.3f);
 	glBegin(GL_QUADS);
     glNormal3f(0,0,1);
     glTexCoord2f(0,0);
@@ -272,48 +262,76 @@ void drawFullScreenQuad()
 
 void drawAgents()
 {
+    float data[5*5*4];
+    float gain, sin_spin, cos_spin, dir[2], flow;
     int i;
-    glColor4f(1,1,1,1);
-    glBegin(GL_POINTS);
     for (i=0; i < maxAgents; i++)
-        if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
-            glVertex2f(agentPos[i][0], agentPos[i][1]);
-    glEnd();
+    {
+        if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1)
+        {
+            // todo: spin should be read from agent data structure
+            sin_spin = sin(agents[i].spin);
+            cos_spin = cos(agents[i].spin);
+            dir[0] = agents[i].dir[0];
+            dir[1] = agents[i].dir[1];
+            gain = agents[i].gain;
+            flow = agents[i].flow;
+            glReadPixels(agents[i].pos[0]-2, agents[i].pos[1]-2+Y_OFFSET,
+                         5, 5,
+                         GL_RGBA, GL_FLOAT, data);
+            glBegin(GL_POINTS);
+            glColor4f(data[4*4+0+2*5*4]+cos_spin*gain*(1-flow)+dir[0]*flow,
+                      data[4*4+1+2*5*4]+sin_spin*gain*(1-flow)+dir[1]*flow,
+                      data[4*4+2+2*5*4]+cos_spin*-gain*(1-flow)-dir[0]*flow,
+                      data[4*4+3+2*5*4]+sin_spin*-gain*(1-flow)-dir[1]*flow);
+            glVertex2i(agents[i].pos[0]+2, agents[i].pos[1]);
+
+            glColor4f(data[2*4+0+4*5*4]+sin_spin*-gain*(1-flow)+dir[0]*flow,
+                      data[2*4+1+4*5*4]+cos_spin*gain*(1-flow)+dir[1]*flow,
+                      data[2*4+2+4*5*4]+sin_spin*gain*(1-flow)-dir[0]*flow,
+                      data[2*4+3+4*5*4]+cos_spin*-gain*(1-flow)-dir[1]*flow);
+            glVertex2f(agents[i].pos[0], agents[i].pos[1]+2);
+
+            glColor4f(data[0*4+0+2*5*4]+cos_spin*-gain*(1-flow)+dir[0]*flow,
+                      data[0*4+1+2*5*4]+sin_spin*-gain*(1-flow)+dir[1]*flow,
+                      data[0*4+2+2*5*4]+cos_spin*gain*(1-flow)-dir[0]*flow,
+                      data[0*4+3+2*5*4]+sin_spin*gain*(1-flow)-dir[1]*flow);
+            glVertex2i(agents[i].pos[0]-2, agents[i].pos[1]);
+
+            glColor4f(data[2*4+0+0*5*4]+sin_spin*gain*(1-flow)+dir[0]*flow,
+                      data[2*4+1+0*5*4]+cos_spin*-gain*(1-flow)+dir[1]*flow,
+                      data[2*4+2+0*5*4]+sin_spin*-gain*(1-flow)-dir[0]*flow,
+                      data[2*4+3+0*5*4]+cos_spin*gain*(1-flow)-dir[1]*flow);
+            glVertex2f(agents[i].pos[0], agents[i].pos[1]-2);
+            glEnd();
+
+            // we will read agent environment here for efficicency
+            agents[i].obs[0] = data[2*4+0+2*5*4];
+            agents[i].obs[1] = data[2*4+1+2*5*4];
+            agents[i].obs[2] = data[2*4+2+2*5*4];
+            agents[i].obs[3] = data[2*4+3+2*5*4];
+        }
+    }
 }
 
 void drawBorder()
 {
-    glColor4f(1,1,1,1);
+    if (!borderGain)
+        return;
     glBegin(GL_LINES);
+    glColor4f(borderGain,0,-borderGain,0);
     glVertex2f(1, 1);
-    glVertex2f(1, HEIGHT);
+    glVertex2f(1, HEIGHT-1);
+    glColor4f(0,borderGain,0,-borderGain);
     glVertex2f(1, 1);
-    glVertex2f(WIDTH, 1);
-    glVertex2f(WIDTH, HEIGHT);
-    glVertex2f(1, HEIGHT);
-    glVertex2f(WIDTH, HEIGHT);
-    glVertex2f(WIDTH, 1);
+    glVertex2f(WIDTH-1, 1);
+    glColor4f(-borderGain,0,borderGain,0);
+    glVertex2f(WIDTH-1, HEIGHT-1);
+    glVertex2f(WIDTH-1, 1);
+    glColor4f(0,-borderGain,0,borderGain);
+    glVertex2f(WIDTH-1, HEIGHT-1);
+    glVertex2f(1, HEIGHT-1);
     glEnd();
-}
-
-void updateObservations()
-{
-    float data[5*5*4];
-    int i;
-    for (i=0; i < maxAgents; i++)
-    {
-        if (agentPos[i][0] > -1 && agentPos[i][1] > -1)
-        {
-            glReadPixels(agentPos[i][0]-2, agentPos[i][1]-2,
-                         5, 5,
-                         GL_RGBA, GL_FLOAT, data);
-
-            agentObs[i][0] = data[4*4+0+2*5*4];
-            agentObs[i][1] = data[2*4+1+4*5*4];
-            agentObs[i][2] = data[0*4+2+2*5*4];
-            agentObs[i][3] = data[2*4+3+0*5*4];
-        }
-    }
 }
 
 void renderScene(void) 
@@ -354,15 +372,11 @@ void renderScene(void)
         glActiveTextureARB(GL_TEXTURE7);
         glBindTexture(GL_TEXTURE_2D, fieldTexIds[src]);
 
-        drawFullScreenQuad(1);
+        drawFullScreenQuad();
 
         glUseProgramObjectARB(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
-
-    // Read observations from destination texture
-    glReadBuffer(GL_COLOR_ATTACHMENT0_EXT + dest);
-    updateObservations();
 	
     // Draw quad to the screen in the corner
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
@@ -383,21 +397,18 @@ void renderScene(void)
     }
 
     else {
+        glPointSize(5);
         int i;
+        glColor3f(1,1,1);
+        glBegin(GL_POINTS);
         for (i=0; i < maxAgents; i++)
         {
-            if (agentPos[i][0] > -1 && agentPos[i][1] > -1) {
-                int x = agentPos[i][0];
-                int y = agentPos[i][1];
-                glColor3f(1,1,1);
-                glBegin(GL_QUADS);
-                glVertex2f(x-7, y-7);
-                glVertex2f(x+7, y-7);
-                glVertex2f(x+7, y+7);
-                glVertex2f(x-7, y+7);
-                glEnd();
+            if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
+                glVertex2f(agents[i].pos[0], agents[i].pos[1]);
             }
         }
+        glEnd();
+        glPointSize(0.5);
     }
 
 	glutSwapBuffers();
@@ -425,14 +436,22 @@ void onTimer(int value)
 void vfgl_Init(int argc, char** argv)
 {
     int i;
-    for (i=0; i < maxAgents; i++)
-        agentPos[i][0] = agentPos[i][1] = -1;
+    for (i=0; i < maxAgents; i++) {
+        agents[i].pos[0] = -1;//(int)fmod(rand(), WIDTH);
+        agents[i].pos[1] = -1;//(int)fmod(rand(), HEIGHT);
+        agents[i].gain = 5;
+        agents[i].spin = 0;
+        agents[i].fade = 0;
+        agents[i].dir[0] = 1;
+        agents[i].dir[1] = 0;
+        agents[i].flow = 0;
+    }
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
 	glutInitWindowPosition(100,100);
 	glutInitWindowSize(WIDTH,HEIGHT);
-	glutCreateWindow("GLSL Shadow mapping");
+	glutCreateWindow("Influence");
 
 #ifdef GLEW_VERSION
     GLenum err = glewInit();
@@ -441,11 +460,11 @@ void vfgl_Init(int argc, char** argv)
         fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
 #endif
-	
+
 	generateFBO();
 	loadFieldShader();
 	
-	glClearColor(0,0,0,1.0f);
+	glClearColor(0,0,0,0);
 
 	glutDisplayFunc(renderScene);
 	//glutIdleFunc(renderScene);

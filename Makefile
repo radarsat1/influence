@@ -1,6 +1,7 @@
 
 UNAME=$(shell uname)
 
+CC=gcc
 CFLAGS=-Wall -Werror -O0 -g $(shell pkg-config --cflags libmapper-0)
 LDLIBS=$(shell pkg-config --libs libmapper-0)
 FRAMEWORKS=$(wildcard /System/Library/Frameworks)
