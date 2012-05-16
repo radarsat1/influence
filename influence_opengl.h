@@ -13,7 +13,7 @@ struct _agent
     float   gain;
     float   spin;
     float   fade;
-    float   dir;
+    float   dir[2];
     float   flow;
 } agent;
 

@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 
 #include <mapper/mapper.h>
 
@@ -84,7 +85,8 @@ void on_signal_dir(mapper_signal msig,
     float *dir = (float*)value;
     mapper_db_signal p = msig_properties(msig);
     int index = (int)(long)p->user_data;
-    agents[index].dir = *dir;
+    agents[index].dir[0] = cos(*dir);
+    agents[index].dir[1] = sin(*dir);
 }
 
 void on_signal_flow(mapper_signal msig,

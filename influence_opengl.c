@@ -319,7 +319,7 @@ void drawFullScreenQuad()
 void drawAgents()
 {
     float data[5*5*4];
-    float gain, sin_spin, cos_spin;
+    float gain, sin_spin, cos_spin, dir[2], flow;
     int i;
     for (i=0; i < maxAgents; i++)
     {
@@ -328,41 +328,44 @@ void drawAgents()
             // todo: spin should be read from agent data structure
             sin_spin = sin(agents[i].spin);
             cos_spin = cos(agents[i].spin);
+            dir[0] = agents[i].dir[0];
+            dir[1] = agents[i].dir[1];
             gain = agents[i].gain;
-            glReadPixels(agents[i].pos[0]-1, agents[i].pos[1]-1+Y_OFFSET,
-                         3, 3,
+            flow = agents[i].flow;
+            glReadPixels(agents[i].pos[0]-2, agents[i].pos[1]-2+Y_OFFSET,
+                         5, 5,
                          GL_RGBA, GL_FLOAT, data);
             glBegin(GL_POINTS);
-            glColor4f(data[2*4+0+1*3*4]+cos_spin*gain,
-                      data[2*4+1+1*3*4]+sin_spin*gain,
-                      data[2*4+2+1*3*4]+cos_spin*-gain,
-                      data[2*4+3+1*3*4]+sin_spin*-gain);
-            glVertex2i(agents[i].pos[0]+1, agents[i].pos[1]);
+            glColor4f(data[4*4+0+2*5*4]+cos_spin*gain*(1-flow)+dir[0]*flow,
+                      data[4*4+1+2*5*4]+sin_spin*gain*(1-flow)+dir[1]*flow,
+                      data[4*4+2+2*5*4]+cos_spin*-gain*(1-flow)-dir[0]*flow,
+                      data[4*4+3+2*5*4]+sin_spin*-gain*(1-flow)-dir[1]*flow);
+            glVertex2i(agents[i].pos[0]+2, agents[i].pos[1]);
 
-            glColor4f(data[1*4+0+2*3*4]+sin_spin*-gain,
-                      data[1*4+1+2*3*4]+cos_spin*gain,
-                      data[1*4+2+2*3*4]+sin_spin*gain,
-                      data[1*4+3+2*3*4]+cos_spin*-gain);
-            glVertex2f(agents[i].pos[0], agents[i].pos[1]+1);
+            glColor4f(data[2*4+0+4*5*4]+sin_spin*-gain*(1-flow)+dir[0]*flow,
+                      data[2*4+1+4*5*4]+cos_spin*gain*(1-flow)+dir[1]*flow,
+                      data[2*4+2+4*5*4]+sin_spin*gain*(1-flow)-dir[0]*flow,
+                      data[2*4+3+4*5*4]+cos_spin*-gain*(1-flow)-dir[1]*flow);
+            glVertex2f(agents[i].pos[0], agents[i].pos[1]+2);
 
-            glColor4f(data[0*4+0+1*3*4]+cos_spin*-gain,
-                      data[0*4+1+1*3*4]+sin_spin*-gain,
-                      data[0*4+2+1*3*4]+cos_spin*gain,
-                      data[0*4+3+1*3*4]+sin_spin*gain);
-            glVertex2i(agents[i].pos[0]-1, agents[i].pos[1]);
+            glColor4f(data[0*4+0+2*5*4]+cos_spin*-gain*(1-flow)+dir[0]*flow,
+                      data[0*4+1+2*5*4]+sin_spin*-gain*(1-flow)+dir[1]*flow,
+                      data[0*4+2+2*5*4]+cos_spin*gain*(1-flow)-dir[0]*flow,
+                      data[0*4+3+2*5*4]+sin_spin*gain*(1-flow)-dir[1]*flow);
+            glVertex2i(agents[i].pos[0]-2, agents[i].pos[1]);
 
-            glColor4f(data[1*4+0+0*3*4]+sin_spin*gain,
-                      data[1*4+1+0*3*4]+cos_spin*-gain,
-                      data[1*4+2+0*3*4]+sin_spin*-gain,
-                      data[1*4+3+0*3*4]+cos_spin*gain);
-            glVertex2f(agents[i].pos[0], agents[i].pos[1]-1);
+            glColor4f(data[2*4+0+0*5*4]+sin_spin*gain*(1-flow)+dir[0]*flow,
+                      data[2*4+1+0*5*4]+cos_spin*-gain*(1-flow)+dir[1]*flow,
+                      data[2*4+2+0*5*4]+sin_spin*-gain*(1-flow)-dir[0]*flow,
+                      data[2*4+3+0*5*4]+cos_spin*gain*(1-flow)-dir[1]*flow);
+            glVertex2f(agents[i].pos[0], agents[i].pos[1]-2);
             glEnd();
 
             // we will read agent environment here for efficicency
-            agents[i].obs[0] = data[1*4+0+1*3*4];
-            agents[i].obs[1] = data[1*4+1+1*3*4];
-            agents[i].obs[2] = data[1*4+2+1*3*4];
-            agents[i].obs[3] = data[1*4+3+1*3*4];
+            agents[i].obs[0] = data[2*4+0+2*5*4];
+            agents[i].obs[1] = data[2*4+1+2*5*4];
+            agents[i].obs[2] = data[2*4+2+2*5*4];
+            agents[i].obs[3] = data[2*4+3+2*5*4];
         }
     }
 }
@@ -493,7 +496,7 @@ void vfgl_Init(int argc, char** argv)
         agents[i].gain = 5;
         agents[i].spin = 0;
         agents[i].fade = 0;
-        agents[i].dir = 0;
+        agents[i].dir[0] = agents[i].dir[1] = 0;
         agents[i].flow = 0;
     }
 
