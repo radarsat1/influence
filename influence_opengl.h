@@ -3,6 +3,7 @@
 #define _VFGL_H_
 
 void vfgl_Init(int argc, char** argv);
+void vfgl_CmdLine(int argc, char **argv);
 void vfgl_Run();
 
 #define maxAgents 20
@@ -21,7 +22,12 @@ extern struct _agent agents[];
 extern float borderGain;
 extern void (*vfgl_DrawCallback)();
 
-#define WIDTH 500.0
-#define HEIGHT 500.0
+// Options
+extern int update_rate;
+extern int number_of_passes;
+extern int x_offset;
+extern int y_offset;
+extern int field_width;
+extern int field_height;
 
 #endif // _VFGL_H_

@@ -22,8 +22,6 @@
 
 #include "influence_opengl.h"
 
-#define Y_OFFSET 0
-
 // TODO: It would be much more efficient to use a 1-d kernel and separate convolution into
 //       2 passes (horizontal & vertical). This means switching between shaders.
 const float kernels[] = {0.003,0.012,0.021,0.012,0.003,
@@ -44,7 +42,13 @@ GLuint kernelsUniform;
 GLuint gainUniform;
 
 GLuint src = 0, dest = 1;
+
 int update_rate = 100;
+int number_of_passes = 1;
+int x_offset = -1;
+int y_offset = -1;
+int field_width = 500;
+int field_height = 500;
 
 struct _agent agents[maxAgents];
 float borderGain = 5;
@@ -194,7 +198,7 @@ void generateFBO()
 	
         // No need to force GL_DEPTH_COMPONENT24, drivers usually give you the max precision if available 
         glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA32F_ARB,
-                      WIDTH, HEIGHT, 0, GL_RGBA,
+                      field_width, field_height, 0, GL_RGBA,
                       GL_FLOAT, 0);
     }
 
@@ -233,7 +237,7 @@ void setupMatrices()
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-    gluOrtho2D(0, WIDTH, 0, HEIGHT);
+    gluOrtho2D(0, field_width, 0, field_height);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -252,11 +256,11 @@ void drawFullScreenQuad()
     glTexCoord2f(0,0);
 	glVertex2f(0,0);
     glTexCoord2f(0,1);
-	glVertex2f(0, HEIGHT);
+	glVertex2f(0, field_height);
     glTexCoord2f(1,1);
-	glVertex2f(WIDTH, HEIGHT);
+	glVertex2f(field_width, field_height);
     glTexCoord2f(1,0);
-	glVertex2f(WIDTH, 0);
+	glVertex2f(field_width, 0);
 	glEnd();
 }
 
@@ -276,7 +280,8 @@ void drawAgents()
             dir[1] = agents[i].dir[1];
             gain = agents[i].gain;
             flow = agents[i].flow;
-            glReadPixels(agents[i].pos[0]-2, agents[i].pos[1]-2+Y_OFFSET,
+            glReadPixels(agents[i].pos[0]-2+x_offset,
+                         agents[i].pos[1]-2+y_offset,
                          5, 5,
                          GL_RGBA, GL_FLOAT, data);
             glBegin(GL_POINTS);
@@ -321,16 +326,16 @@ void drawBorder()
     glBegin(GL_LINES);
     glColor4f(borderGain,0,-borderGain,0);
     glVertex2f(1, 1);
-    glVertex2f(1, HEIGHT-1);
+    glVertex2f(1, field_height-1);
     glColor4f(0,borderGain,0,-borderGain);
     glVertex2f(1, 1);
-    glVertex2f(WIDTH-1, 1);
+    glVertex2f(field_width-1, 1);
     glColor4f(-borderGain,0,borderGain,0);
-    glVertex2f(WIDTH-1, HEIGHT-1);
-    glVertex2f(WIDTH-1, 1);
+    glVertex2f(field_width-1, field_height-1);
+    glVertex2f(field_width-1, 1);
     glColor4f(0,-borderGain,0,borderGain);
-    glVertex2f(WIDTH-1, HEIGHT-1);
-    glVertex2f(1, HEIGHT-1);
+    glVertex2f(field_width-1, field_height-1);
+    glVertex2f(1, field_height-1);
     glEnd();
 }
 
@@ -341,14 +346,14 @@ void renderScene(void)
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
 	
-	glViewport(0,0, WIDTH, HEIGHT);
+	glViewport(0,0, field_width, field_height);
 
     // Draw quad to the screen in the corner
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
 
     setupMatrices();
 
-    int pass = 1;
+    int pass = number_of_passes;
 
     while (pass-- > 0)
     {
@@ -437,8 +442,8 @@ void vfgl_Init(int argc, char** argv)
 {
     int i;
     for (i=0; i < maxAgents; i++) {
-        agents[i].pos[0] = -1;//(int)fmod(rand(), WIDTH);
-        agents[i].pos[1] = -1;//(int)fmod(rand(), HEIGHT);
+        agents[i].pos[0] = -1;
+        agents[i].pos[1] = -1;
         agents[i].gain = 5;
         agents[i].spin = 0;
         agents[i].fade = 0;
@@ -449,8 +454,7 @@ void vfgl_Init(int argc, char** argv)
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
-	glutInitWindowPosition(100,100);
-	glutInitWindowSize(WIDTH,HEIGHT);
+	glutInitWindowSize(field_width, field_height);
 	glutCreateWindow("Influence");
 
 #ifdef GLEW_VERSION
