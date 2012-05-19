@@ -49,6 +49,8 @@ int x_offset = -1;
 int y_offset = -1;
 int field_width = 500;
 int field_height = 500;
+int window_width = 0;
+int window_height = 0;
 
 struct _agent agents[maxAgents];
 float borderGain = 5;
@@ -233,11 +235,16 @@ void generateFBO()
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
-void setupMatrices()
+void setupMatrices(int window)
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-    gluOrtho2D(0, field_width, 0, field_height);
+
+    if (window==0)
+        gluOrtho2D(0, field_width, 0, field_height);
+    else if (window==1)
+        gluOrtho2D(0, window_width, 0, window_height);
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -247,7 +254,7 @@ void update(void)
     // Nothing to do.
 }
 
-void drawFullScreenQuad()
+void drawFullScreenFieldQuad()
 {
 	// Square
 	glColor4f(0.3f,0.3f,0.3f,0.3f);
@@ -261,6 +268,23 @@ void drawFullScreenQuad()
 	glVertex2f(field_width, field_height);
     glTexCoord2f(1,0);
 	glVertex2f(field_width, 0);
+	glEnd();
+}
+
+void drawFullScreenWindowQuad()
+{
+	// Square
+	glColor4f(0.3f,0.3f,0.3f,0.3f);
+	glBegin(GL_QUADS);
+    glNormal3f(0,0,1);
+    glTexCoord2f(0,0);
+	glVertex2f(0,0);
+    glTexCoord2f(0,1);
+	glVertex2f(0, window_height);
+    glTexCoord2f(1,1);
+	glVertex2f(window_width, window_height);
+    glTexCoord2f(1,0);
+	glVertex2f(window_width, 0);
 	glEnd();
 }
 
@@ -351,7 +375,7 @@ void renderScene(void)
     // Draw quad to the screen in the corner
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
 
-    setupMatrices();
+    setupMatrices(0);
 
     int pass = number_of_passes;
 
@@ -377,13 +401,16 @@ void renderScene(void)
         glActiveTextureARB(GL_TEXTURE7);
         glBindTexture(GL_TEXTURE_2D, fieldTexIds[src]);
 
-        drawFullScreenQuad();
+        drawFullScreenFieldQuad();
 
         glUseProgramObjectARB(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
-	
-    // Draw quad to the screen in the corner
+
+    setupMatrices(1);
+	glViewport(0,0, window_width, window_height);
+
+    // Draw quad to the screen
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
     glClear( GL_COLOR_BUFFER_BIT);
@@ -395,7 +422,7 @@ void renderScene(void)
 
         glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
         glEnable( GL_TEXTURE_2D );
-        drawFullScreenQuad();
+        drawFullScreenWindowQuad();
         glDisable( GL_TEXTURE_2D );
 
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -432,6 +459,12 @@ void processNormalKeys(unsigned char key, int x, int y) {
         showField = 1-showField;
 }
 
+void reshape(int w, int h)
+{
+    window_width = w;
+    window_height = h;
+}
+
 void onTimer(int value)
 {
     renderScene();
@@ -452,9 +485,14 @@ void vfgl_Init(int argc, char** argv)
         agents[i].flow = 0;
     }
 
+    if (window_width==0)
+        window_width = field_width;
+    if (window_height==0)
+        window_height = field_height;
+
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
-	glutInitWindowSize(field_width, field_height);
+	glutInitWindowSize(window_width, window_height);
 	glutCreateWindow("Influence");
 
 #ifdef GLEW_VERSION
@@ -475,6 +513,7 @@ void vfgl_Init(int argc, char** argv)
 	glutTimerFunc((int)(1000.0/update_rate), onTimer, 0);
 	
 	glutKeyboardFunc(processNormalKeys);
+	glutReshapeFunc(reshape);
 }
 
 void vfgl_Run()
