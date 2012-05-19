@@ -58,6 +58,11 @@ float borderGain = 5;
 
 int showField = 0;
 
+int mouse_x = -1;
+int mouse_y = -1;
+int prev_mouse_x = -1;
+int prev_mouse_y = -1;
+
 // For switching back to windowed mode
 int before_fs_window_width = 0;
 int before_fs_window_height = 0;
@@ -265,13 +270,13 @@ void drawFullScreenFieldQuad()
 	glColor4f(0.3f,0.3f,0.3f,0.3f);
 	glBegin(GL_QUADS);
     glNormal3f(0,0,1);
-    glTexCoord2f(0,0);
-	glVertex2f(0,0);
     glTexCoord2f(0,1);
+	glVertex2f(0,0);
+    glTexCoord2f(0,0);
 	glVertex2f(0, field_height);
-    glTexCoord2f(1,1);
-	glVertex2f(field_width, field_height);
     glTexCoord2f(1,0);
+	glVertex2f(field_width, field_height);
+    glTexCoord2f(1,1);
 	glVertex2f(field_width, 0);
 	glEnd();
 }
@@ -282,13 +287,13 @@ void drawFullScreenWindowQuad()
 	glColor4f(0.3f,0.3f,0.3f,0.3f);
 	glBegin(GL_QUADS);
     glNormal3f(0,0,1);
-    glTexCoord2f(0,0);
-	glVertex2f(0,0);
     glTexCoord2f(0,1);
+	glVertex2f(0,0);
+    glTexCoord2f(0,0);
 	glVertex2f(0, window_height);
-    glTexCoord2f(1,1);
-	glVertex2f(window_width, window_height);
     glTexCoord2f(1,0);
+	glVertex2f(window_width, window_height);
+    glTexCoord2f(1,1);
 	glVertex2f(window_width, 0);
 	glEnd();
 }
@@ -368,6 +373,30 @@ void drawBorder()
     glEnd();
 }
 
+void drawMouse()
+{
+    if (prev_mouse_x > -1 && prev_mouse_y > -1)
+    {
+        glColor4f(10,10,10,10);
+        if (prev_mouse_x == mouse_x
+            && prev_mouse_y == mouse_y)
+        {
+            glBegin(GL_POINTS);
+            glVertex2i(mouse_x, mouse_y);
+            glEnd();
+        }
+        else if (mouse_x > -1 && mouse_y > -1)
+        {
+            glBegin(GL_LINES);
+            glVertex2i(prev_mouse_x, prev_mouse_y);
+            glVertex2i(mouse_x, mouse_y);
+            glEnd();
+        }
+        prev_mouse_x = mouse_x;
+        prev_mouse_y = mouse_y;
+    }
+}
+
 void renderScene(void) 
 {
 	update();
@@ -394,6 +423,9 @@ void renderScene(void)
         glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT + src);
         drawBorder();
         drawAgents();
+
+        // Draw mouse "agent"
+        drawMouse();
 
         // Draw the shader to destination texture
         glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT + dest);
@@ -484,6 +516,30 @@ void reshape(int w, int h)
     }
 }
 
+int pressed = 0;
+void mouseMove(int x, int y)
+{
+    if (pressed) {
+        mouse_x = x * field_width / window_width;
+        mouse_y = y * field_height / window_height;
+    }
+    else {
+        mouse_x = -1;
+        mouse_y = -1;
+    }
+}
+
+void mouseButton(int button, int state, int x, int y)
+{
+    if (button==GLUT_LEFT_BUTTON)
+    {
+        pressed = state==GLUT_DOWN;
+        mouseMove(x, y);
+        prev_mouse_x = mouse_x;
+        prev_mouse_y = mouse_y;
+    }
+}
+
 void onTimer(int value)
 {
     renderScene();
@@ -537,6 +593,8 @@ void vfgl_Init(int argc, char** argv)
 	
 	glutKeyboardFunc(processNormalKeys);
 	glutReshapeFunc(reshape);
+	glutMouseFunc(mouseButton);
+	glutMotionFunc(mouseMove);
 }
 
 void vfgl_Run()
