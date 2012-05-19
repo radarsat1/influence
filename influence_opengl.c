@@ -51,11 +51,16 @@ int field_width = 500;
 int field_height = 500;
 int window_width = 0;
 int window_height = 0;
+int fullscreen = 0;
 
 struct _agent agents[maxAgents];
 float borderGain = 5;
 
 int showField = 0;
+
+// For switching back to windowed mode
+int before_fs_window_width = 0;
+int before_fs_window_height = 0;
 
 void (*vfgl_DrawCallback)() = 0;
 
@@ -453,8 +458,17 @@ void processNormalKeys(unsigned char key, int x, int y) {
 	
 	if (key == 27) 
 		exit(0);
-    if (key == 'f')
-        glutFullScreen();
+    if (key == 'f') {
+        if (fullscreen) {
+            glutReshapeWindow(before_fs_window_width,
+                              before_fs_window_height);
+            fullscreen = 0;
+        }
+        else {
+            glutFullScreen();
+            fullscreen = 1;
+        }
+    }
     if (key == ' ')
         showField = 1-showField;
 }
@@ -463,6 +477,11 @@ void reshape(int w, int h)
 {
     window_width = w;
     window_height = h;
+
+    if (!fullscreen) {
+        before_fs_window_width = window_width;
+        before_fs_window_height = window_height;
+    }
 }
 
 void onTimer(int value)
@@ -494,6 +513,10 @@ void vfgl_Init(int argc, char** argv)
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
 	glutInitWindowSize(window_width, window_height);
 	glutCreateWindow("Influence");
+
+    if (fullscreen) {
+        glutFullScreen();
+    }
 
 #ifdef GLEW_VERSION
     GLenum err = glewInit();

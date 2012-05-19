@@ -150,18 +150,19 @@ void initMapper()
 void CmdLine(int argc, char **argv)
 {
     int c;
-    while ((c = getopt(argc, argv, "hr:p:x:s:")) != -1)
+    while ((c = getopt(argc, argv, "hfr:p:x:s:")) != -1)
     {
         switch (c)
         {
         case 'h': // Help
             printf("Usage: influence [-h] [-r <rate>] [-p <passes>] "
-                   "[-x <offset>] [-s <size>]\n");
+                   "[-x <offset>] [-s <size>] [-f]\n");
             printf("  -h  Help\n");
             printf("  -r  Update rate, default=100\n");
             printf("  -p  Number of passes per frame, default=1\n");
             printf("  -x  \"X,Y\" offsets, glReadPixel work-around\n");
             printf("  -s  Field size in pixels, default = 500\n");
+            printf("  -f  Begin in full-screen mode\n");
             exit(0);
         case 'r': // Rate
             update_rate = atoi(optarg);
@@ -177,6 +178,9 @@ void CmdLine(int argc, char **argv)
         case 's': // Field Size
             field_width = atoi(optarg);
             field_height = atoi(optarg);
+            break;
+        case 'f': // Full screen
+            fullscreen = 1;
             break;
         case '?': // Unknown
             printf("influence: Bad options, use -h for help.\n");

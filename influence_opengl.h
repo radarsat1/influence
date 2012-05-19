@@ -29,5 +29,6 @@ extern int x_offset;
 extern int y_offset;
 extern int field_width;
 extern int field_height;
+extern int fullscreen;
 
 #endif // _VFGL_H_
