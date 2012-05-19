@@ -9,7 +9,7 @@ struct _autoConnectState
 {
     int seen_srcdest_link;
     int seen_destsrc_link;
-    char *vector_device_name;
+    char *influence_device_name;
     char *xagora_device_name;
     int connected;
 
@@ -38,7 +38,7 @@ void make_connections()
     struct _autoConnectState *acs = &autoConnectState;
 
     sprintf(signame1, "%s/node/%d/observation",
-            acs->vector_device_name, mdev_ordinal(acs->dev));
+            acs->influence_device_name, mdev_ordinal(acs->dev));
 
     sprintf(signame2, "%s/observation", mdev_name(acs->dev));
 
@@ -47,7 +47,7 @@ void make_connections()
     sprintf(signame1, "%s/position", mdev_name(acs->dev));
 
     sprintf(signame2, "%s/node/%d/position",
-            acs->vector_device_name, mdev_ordinal(acs->dev));
+            acs->influence_device_name, mdev_ordinal(acs->dev));
 
     mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 
@@ -75,11 +75,11 @@ void link_db_callback(mapper_db_link record,
 
     if (acs->connected)
         return;
-    if (!acs->vector_device_name || !mdev_name(acs->dev))
+    if (!acs->influence_device_name || !mdev_name(acs->dev))
         return;
 
     if (action == MDB_NEW || action == MDB_MODIFY) {
-        if (strcmp(record->src_name, acs->vector_device_name)==0
+        if (strcmp(record->src_name, acs->influence_device_name)==0
             &&
             strcmp(record->dest_name, mdev_name(acs->dev))==0)
         {
@@ -88,7 +88,7 @@ void link_db_callback(mapper_db_link record,
 
         if (strcmp(record->src_name, mdev_name(acs->dev))==0
             &&
-            strcmp(record->dest_name, acs->vector_device_name)==0)
+            strcmp(record->dest_name, acs->influence_device_name)==0)
         {
             acs->seen_destsrc_link = 1;
         }
@@ -143,9 +143,9 @@ mapper_device autoConnect()
         mapper_monitor_poll(acs->mon, 0);
     }
 
-    mapper_db_device *dbdev = mapper_db_match_devices_by_name(db, "vector");
+    mapper_db_device *dbdev = mapper_db_match_devices_by_name(db, "influence");
     if (dbdev) {
-        acs->vector_device_name = strdup((*dbdev)->name);
+        acs->influence_device_name = strdup((*dbdev)->name);
         mapper_monitor_link(acs->mon, (*dbdev)->name, mdev_name(acs->dev));
         mapper_monitor_link(acs->mon, mdev_name(acs->dev), (*dbdev)->name);
 
@@ -182,11 +182,11 @@ mapper_device autoConnect()
 void autoDisconnect()
 {
     struct _autoConnectState *acs = &autoConnectState;
-    if (acs->vector_device_name) {
+    if (acs->influence_device_name) {
         mapper_monitor_unlink(acs->mon,
-                              acs->vector_device_name,
+                              acs->influence_device_name,
                               mdev_name(acs->dev));
-        free(acs->vector_device_name);
+        free(acs->influence_device_name);
     }
     if (acs->xagora_device_name) {
         mapper_monitor_unlink(acs->mon,
