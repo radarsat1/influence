@@ -62,6 +62,8 @@ int mouse_x = -1;
 int mouse_y = -1;
 int prev_mouse_x = -1;
 int prev_mouse_y = -1;
+int delta_mouse_x = 0;
+int delta_mouse_y = 0;
 
 // For switching back to windowed mode
 int before_fs_window_width = 0;
@@ -375,7 +377,7 @@ void drawMouse()
 {
     if (prev_mouse_x > -1 && prev_mouse_y > -1)
     {
-        glColor4f(10,10,10,10);
+        glColor4f(delta_mouse_x,delta_mouse_y,0.9,0);
         if (prev_mouse_x == mouse_x
             && prev_mouse_y == mouse_y)
         {
@@ -387,9 +389,14 @@ void drawMouse()
         {
             glBegin(GL_LINES);
             glVertex2i(prev_mouse_x, prev_mouse_y);
+            glColor4f(mouse_x - prev_mouse_x,
+                      mouse_y - prev_mouse_y,
+                      0.9,0);
             glVertex2i(mouse_x, mouse_y);
             glEnd();
         }
+        delta_mouse_x = mouse_x - prev_mouse_x;
+        delta_mouse_y = mouse_y - prev_mouse_y;
         prev_mouse_x = mouse_x;
         prev_mouse_y = mouse_y;
     }
@@ -524,6 +531,8 @@ void mouseMove(int x, int y)
     else {
         mouse_x = -1;
         mouse_y = -1;
+        delta_mouse_x = 0;
+        delta_mouse_y = 0;
     }
 }
 
