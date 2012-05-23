@@ -22,8 +22,6 @@
 
 #include "influence_opengl.h"
 
-#define Y_OFFSET 0
-
 // TODO: It would be much more efficient to use a 1-d kernel and separate convolution into
 //       2 passes (horizontal & vertical). This means switching between shaders.
 const float kernels[] = {0.003,0.012,0.021,0.012,0.003,
@@ -44,12 +42,30 @@ GLuint kernelsUniform;
 GLuint gainUniform;
 
 GLuint src = 0, dest = 1;
+
 int update_rate = 100;
+int number_of_passes = 1;
+int x_offset = -1;
+int y_offset = -1;
+int field_width = 500;
+int field_height = 500;
+int window_width = 0;
+int window_height = 0;
+int fullscreen = 0;
 
 struct _agent agents[maxAgents];
 float borderGain = 5;
 
 int showField = 0;
+
+int mouse_x = -1;
+int mouse_y = -1;
+int prev_mouse_x = -1;
+int prev_mouse_y = -1;
+
+// For switching back to windowed mode
+int before_fs_window_width = 0;
+int before_fs_window_height = 0;
 
 void (*vfgl_DrawCallback)() = 0;
 
@@ -194,7 +210,7 @@ void generateFBO()
 	
         // No need to force GL_DEPTH_COMPONENT24, drivers usually give you the max precision if available 
         glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA32F_ARB,
-                      WIDTH, HEIGHT, 0, GL_RGBA,
+                      field_width, field_height, 0, GL_RGBA,
                       GL_FLOAT, 0);
     }
 
@@ -229,11 +245,16 @@ void generateFBO()
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 }
 
-void setupMatrices()
+void setupMatrices(int window)
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-    gluOrtho2D(0, WIDTH, 0, HEIGHT);
+
+    if (window==0)
+        gluOrtho2D(0, field_width, 0, field_height);
+    else if (window==1)
+        gluOrtho2D(0, window_width, 0, window_height);
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -243,20 +264,37 @@ void update(void)
     // Nothing to do.
 }
 
-void drawFullScreenQuad()
+void drawFullScreenFieldQuad()
 {
 	// Square
 	glColor4f(0.3f,0.3f,0.3f,0.3f);
 	glBegin(GL_QUADS);
     glNormal3f(0,0,1);
-    glTexCoord2f(0,0);
-	glVertex2f(0,0);
     glTexCoord2f(0,1);
-	glVertex2f(0, HEIGHT);
-    glTexCoord2f(1,1);
-	glVertex2f(WIDTH, HEIGHT);
+	glVertex2f(0,0);
+    glTexCoord2f(0,0);
+	glVertex2f(0, field_height);
     glTexCoord2f(1,0);
-	glVertex2f(WIDTH, 0);
+	glVertex2f(field_width, field_height);
+    glTexCoord2f(1,1);
+	glVertex2f(field_width, 0);
+	glEnd();
+}
+
+void drawFullScreenWindowQuad()
+{
+	// Square
+	glColor4f(0.3f,0.3f,0.3f,0.3f);
+	glBegin(GL_QUADS);
+    glNormal3f(0,0,1);
+    glTexCoord2f(0,1);
+	glVertex2f(0,0);
+    glTexCoord2f(0,0);
+	glVertex2f(0, window_height);
+    glTexCoord2f(1,0);
+	glVertex2f(window_width, window_height);
+    glTexCoord2f(1,1);
+	glVertex2f(window_width, 0);
 	glEnd();
 }
 
@@ -276,7 +314,8 @@ void drawAgents()
             dir[1] = agents[i].dir[1];
             gain = agents[i].gain;
             flow = agents[i].flow;
-            glReadPixels(agents[i].pos[0]-2, agents[i].pos[1]-2+Y_OFFSET,
+            glReadPixels(agents[i].pos[0]-2+x_offset,
+                         agents[i].pos[1]-2+y_offset,
                          5, 5,
                          GL_RGBA, GL_FLOAT, data);
             glBegin(GL_POINTS);
@@ -319,17 +358,41 @@ void drawBorder()
     glBegin(GL_LINES);
     glColor4f(borderGain,0,-borderGain,0);
     glVertex2f(1, 1);
-    glVertex2f(1, HEIGHT-1);
+    glVertex2f(1, field_height-1);
     glColor4f(0,borderGain,0,-borderGain);
     glVertex2f(1, 1);
-    glVertex2f(WIDTH-1, 1);
+    glVertex2f(field_width-1, 1);
     glColor4f(-borderGain,0,borderGain,0);
-    glVertex2f(WIDTH-1, HEIGHT-1);
-    glVertex2f(WIDTH-1, 1);
+    glVertex2f(field_width-1, field_height-1);
+    glVertex2f(field_width-1, 1);
     glColor4f(0,-borderGain,0,borderGain);
-    glVertex2f(WIDTH-1, HEIGHT-1);
-    glVertex2f(1, HEIGHT-1);
+    glVertex2f(field_width-1, field_height-1);
+    glVertex2f(1, field_height-1);
     glEnd();
+}
+
+void drawMouse()
+{
+    if (prev_mouse_x > -1 && prev_mouse_y > -1)
+    {
+        glColor4f(10,10,10,10);
+        if (prev_mouse_x == mouse_x
+            && prev_mouse_y == mouse_y)
+        {
+            glBegin(GL_POINTS);
+            glVertex2i(mouse_x, mouse_y);
+            glEnd();
+        }
+        else if (mouse_x > -1 && mouse_y > -1)
+        {
+            glBegin(GL_LINES);
+            glVertex2i(prev_mouse_x, prev_mouse_y);
+            glVertex2i(mouse_x, mouse_y);
+            glEnd();
+        }
+        prev_mouse_x = mouse_x;
+        prev_mouse_y = mouse_y;
+    }
 }
 
 void renderScene(void) 
@@ -339,14 +402,14 @@ void renderScene(void)
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
 	
-	glViewport(0,0, WIDTH, HEIGHT);
+	glViewport(0,0, field_width, field_height);
 
     // Draw quad to the screen in the corner
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
 
-    setupMatrices();
+    setupMatrices(0);
 
-    int pass = 1;
+    int pass = number_of_passes;
 
     while (pass-- > 0)
     {
@@ -359,6 +422,9 @@ void renderScene(void)
         drawBorder();
         drawAgents();
 
+        // Draw mouse "agent"
+        drawMouse();
+
         // Draw the shader to destination texture
         glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT + dest);
 
@@ -370,13 +436,16 @@ void renderScene(void)
         glActiveTextureARB(GL_TEXTURE7);
         glBindTexture(GL_TEXTURE_2D, fieldTexIds[src]);
 
-        drawFullScreenQuad();
+        drawFullScreenFieldQuad();
 
         glUseProgramObjectARB(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
-	
-    // Draw quad to the screen in the corner
+
+    setupMatrices(1);
+	glViewport(0,0, window_width, window_height);
+
+    // Draw quad to the screen
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
     glClear( GL_COLOR_BUFFER_BIT);
@@ -388,7 +457,7 @@ void renderScene(void)
 
         glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
         glEnable( GL_TEXTURE_2D );
-        drawFullScreenQuad();
+        drawFullScreenWindowQuad();
         glDisable( GL_TEXTURE_2D );
 
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -419,10 +488,54 @@ void processNormalKeys(unsigned char key, int x, int y) {
 	
 	if (key == 27) 
 		exit(0);
-    if (key == 'f')
-        glutFullScreen();
+    if (key == 'f') {
+        if (fullscreen) {
+            glutReshapeWindow(before_fs_window_width,
+                              before_fs_window_height);
+            fullscreen = 0;
+        }
+        else {
+            glutFullScreen();
+            fullscreen = 1;
+        }
+    }
     if (key == ' ')
         showField = 1-showField;
+}
+
+void reshape(int w, int h)
+{
+    window_width = w;
+    window_height = h;
+
+    if (!fullscreen) {
+        before_fs_window_width = window_width;
+        before_fs_window_height = window_height;
+    }
+}
+
+int pressed = 0;
+void mouseMove(int x, int y)
+{
+    if (pressed) {
+        mouse_x = x * field_width / window_width;
+        mouse_y = y * field_height / window_height;
+    }
+    else {
+        mouse_x = -1;
+        mouse_y = -1;
+    }
+}
+
+void mouseButton(int button, int state, int x, int y)
+{
+    if (button==GLUT_LEFT_BUTTON)
+    {
+        pressed = state==GLUT_DOWN;
+        mouseMove(x, y);
+        prev_mouse_x = mouse_x;
+        prev_mouse_y = mouse_y;
+    }
 }
 
 void onTimer(int value)
@@ -435,8 +548,8 @@ void vfgl_Init(int argc, char** argv)
 {
     int i;
     for (i=0; i < maxAgents; i++) {
-        agents[i].pos[0] = -1;//(int)fmod(rand(), WIDTH);
-        agents[i].pos[1] = -1;//(int)fmod(rand(), HEIGHT);
+        agents[i].pos[0] = -1;
+        agents[i].pos[1] = -1;
         agents[i].gain = 5;
         agents[i].spin = 0;
         agents[i].fade = 0;
@@ -445,11 +558,19 @@ void vfgl_Init(int argc, char** argv)
         agents[i].flow = 0;
     }
 
+    if (window_width==0)
+        window_width = field_width;
+    if (window_height==0)
+        window_height = field_height;
+
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
-	glutInitWindowPosition(100,100);
-	glutInitWindowSize(WIDTH,HEIGHT);
+	glutInitWindowSize(window_width, window_height);
 	glutCreateWindow("Influence");
+
+    if (fullscreen) {
+        glutFullScreen();
+    }
 
 #ifdef GLEW_VERSION
     GLenum err = glewInit();
@@ -469,6 +590,9 @@ void vfgl_Init(int argc, char** argv)
 	glutTimerFunc((int)(1000.0/update_rate), onTimer, 0);
 	
 	glutKeyboardFunc(processNormalKeys);
+	glutReshapeFunc(reshape);
+	glutMouseFunc(mouseButton);
+	glutMotionFunc(mouseMove);
 }
 
 void vfgl_Run()

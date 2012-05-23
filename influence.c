@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
+#include <getopt.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <mapper/mapper.h>
 
@@ -102,10 +105,10 @@ void on_signal_flow(mapper_signal msig,
 void initMapper()
 {
     long i;
-    int mn = 0, mx = WIDTH;
+    int mn = 0, mx = field_width;
     float fmn = 0, fmx = 1.0;
 
-    dev = mdev_new("vector", 9000, 0);
+    dev = mdev_new("influence", 9000, 0);
 
     for (i = 0; i < maxAgents; i++)
     {
@@ -144,8 +147,55 @@ void initMapper()
     }
 }
 
+void CmdLine(int argc, char **argv)
+{
+    int c;
+    while ((c = getopt(argc, argv, "hfr:p:x:s:")) != -1)
+    {
+        switch (c)
+        {
+        case 'h': // Help
+            printf("Usage: influence [-h] [-r <rate>] [-p <passes>] "
+                   "[-x <offset>] [-s <size>] [-f]\n");
+            printf("  -h  Help\n");
+            printf("  -r  Update rate, default=100\n");
+            printf("  -p  Number of passes per frame, default=1\n");
+            printf("  -x  \"X,Y\" offsets, glReadPixel work-around\n");
+            printf("  -s  Field size in pixels, default = 500\n");
+            printf("  -f  Begin in full-screen mode\n");
+            exit(0);
+        case 'r': // Rate
+            update_rate = atoi(optarg);
+            break;
+        case 'p': // Passes
+            number_of_passes = atoi(optarg);
+            break;
+        case 'x': // X/Y Offset
+            x_offset = atoi(optarg);
+            if (strchr(optarg,',')!=0)
+                y_offset = atoi(strchr(optarg,',')+1);
+            break;
+        case 's': // Field Size
+            field_width = atoi(optarg);
+            field_height = atoi(optarg);
+            break;
+        case 'f': // Full screen
+            fullscreen = 1;
+            break;
+        case '?': // Unknown
+            printf("influence: Bad options, use -h for help.\n");
+            exit(1);
+            break;
+        default:
+            abort();
+        }
+    }
+}
+
 int main(int argc, char** argv)
 {
+    CmdLine(argc, argv);
+
     initMapper();
 
     vfgl_Init(argc, argv);
