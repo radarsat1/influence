@@ -105,6 +105,7 @@ void link_db_callback(mapper_db_link record,
         sig_pos = mdev_add_output(acs->dev, "position", 2, 'i', 0, &imn, &imx);
         sig_gain = mdev_add_output(acs->dev, "gain", 1, 'f',
                                    "normalized", &mn, &mx);
+        mx = 0.9;
         sig_fade = mdev_add_output(acs->dev, "fade", 1, 'f', "normalized", &mn, &mx);
         mn = -1.5;
         mx = 1.5;

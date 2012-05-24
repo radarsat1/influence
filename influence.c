@@ -126,6 +126,7 @@ void initMapper()
         sprintf(str, "/node/%ld/gain", i+1);
         mdev_add_input(dev, str, 1, 'f', 0,
                        &fmn, &fmx, on_signal_gain, (void*)(i));
+        fmx = 0.9;
         sprintf(str, "/node/%ld/fade", i+1);
         mdev_add_input(dev, str, 1, 'f', 0,
                        &fmn, &fmx, on_signal_fade, (void*)(i));
