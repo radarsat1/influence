@@ -51,10 +51,12 @@ void make_connections()
 
     mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 
-    sprintf(signame2, "%s/Butterfly%d",
-            acs->xagora_device_name, mdev_ordinal(acs->dev));
+    if (acs->xagora_device_name) {
+        sprintf(signame2, "%s/Butterfly%d",
+                acs->xagora_device_name, mdev_ordinal(acs->dev));
 
-    mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
+        mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
+    }
 }
 
 void signal_handler(mapper_signal msig,
