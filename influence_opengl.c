@@ -479,7 +479,7 @@ void renderScene(void)
         for (i=0; i < maxAgents; i++)
         {
             if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
-                glVertex2f(agents[i].pos[0], agents[i].pos[1]);
+                glVertex2f(agents[i].pos[0], window_height-agents[i].pos[1]);
             }
         }
         glEnd();
