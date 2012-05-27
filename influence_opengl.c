@@ -450,7 +450,7 @@ void renderScene(void)
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    else {
+    if (showField != 1) {
         glPointSize(5);
         int i;
         glColor3f(1,1,1);
@@ -458,7 +458,7 @@ void renderScene(void)
         for (i=0; i < maxAgents; i++)
         {
             if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
-                glVertex2f(agents[i].pos[0], agents[i].pos[1]);
+                glVertex2f(agents[i].pos[0], window_height-agents[i].pos[1]-2);
             }
         }
         glEnd();
@@ -486,8 +486,12 @@ void processNormalKeys(unsigned char key, int x, int y) {
             fullscreen = 1;
         }
     }
-    if (key == ' ')
-        showField = 1-showField;
+    if (key == ' ') {
+        showField++;
+        if (showField > 2) {
+            showField = 0;
+        }
+    }
 }
 
 void reshape(int w, int h)
