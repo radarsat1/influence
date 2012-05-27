@@ -55,6 +55,7 @@ int fullscreen = 0;
 
 struct _agent agents[maxAgents];
 float borderGain = 5;
+float convolutionGain = 0.999;
 
 int showField = 0;
 
@@ -182,7 +183,7 @@ void loadFieldShader()
 
     glUseProgramObjectARB(fieldShaderId);
     glUniform1fvARB(kernelsUniform, 25, kernels);
-    glUniform1fARB(gainUniform, 0.99999);
+    glUniform1fARB(gainUniform, convolutionGain);
 }
 
 void generateFBO()
