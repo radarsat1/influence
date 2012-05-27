@@ -7,8 +7,7 @@
 
 struct _autoConnectState
 {
-    int seen_srcdest_link;
-    int seen_destsrc_link;
+    int seen_link;
     char *influence_device_name;
     char *xagora_device_name;
     int connected;
@@ -60,6 +59,7 @@ void make_connections()
 }
 
 void signal_handler(mapper_signal msig,
+                    int instance_id,
                     mapper_db_signal props,
                     mapper_timetag_t *timetag,
                     void *value)
@@ -81,22 +81,15 @@ void link_db_callback(mapper_db_link record,
         return;
 
     if (action == MDB_NEW || action == MDB_MODIFY) {
-        if (strcmp(record->src_name, acs->influence_device_name)==0
-            &&
-            strcmp(record->dest_name, mdev_name(acs->dev))==0)
-        {
-            acs->seen_srcdest_link = 1;
-        }
-
         if (strcmp(record->src_name, mdev_name(acs->dev))==0
             &&
             strcmp(record->dest_name, acs->influence_device_name)==0)
         {
-            acs->seen_destsrc_link = 1;
+            acs->seen_link = 1;
         }
     }
 
-    if (acs->seen_srcdest_link && acs->seen_destsrc_link)
+    if (acs->seen_link)
     {
         float mn=-1, mx=1;
         mdev_add_input(acs->dev, "observation", 2, 'f', "norm", &mn, &mx,
@@ -149,7 +142,6 @@ mapper_device autoConnect()
     mapper_db_device *dbdev = mapper_db_match_devices_by_name(db, "influence");
     if (dbdev) {
         acs->influence_device_name = strdup((*dbdev)->name);
-        mapper_monitor_link(acs->mon, (*dbdev)->name, mdev_name(acs->dev));
         mapper_monitor_link(acs->mon, mdev_name(acs->dev), (*dbdev)->name);
 
         mapper_monitor_request_links_by_name(acs->mon, (*dbdev)->name);
@@ -263,6 +255,7 @@ int main(int argc, char *argv[])
             int p[2];
             p[0] = (int)pos[0];
             p[1] = (int)pos[1];
+            printf("updating pos\n");
             msig_update(sig_pos, p);
         }
     }

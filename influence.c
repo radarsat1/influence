@@ -20,12 +20,15 @@ void on_draw()
     int i;
     for (i=0; i < maxAgents; i++)
     {
-        if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1)
+        if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
+            printf("updating agent obs\n");
             msig_update(sigobs[i], agents[i].obs);
+        }
     }
 }
 
 void on_signal_border_gain(mapper_signal msig,
+                           int instance_id,
                            mapper_db_signal props,
                            mapper_timetag_t *timetag,
                            void *value)
@@ -34,19 +37,22 @@ void on_signal_border_gain(mapper_signal msig,
     borderGain = *gain;
 }
 
-void on_signal(mapper_signal msig,
-               mapper_db_signal props,
-               mapper_timetag_t *timetag,
-               void *value)
+void on_signal_pos(mapper_signal msig,
+                   int instance_id,
+                   mapper_db_signal props,
+                   mapper_timetag_t *timetag,
+                   void *value)
 {
     int *pos = (int*)value;
     mapper_db_signal p = msig_properties(msig);
     int index = (int)(long)p->user_data;
     agents[index].pos[0] = pos[0];
     agents[index].pos[1] = pos[1];
+    printf("on_signal_pos %i %i\n", pos[0], pos[1]);
 }
 
 void on_signal_gain(mapper_signal msig,
+                    int instance_id,
                     mapper_db_signal props,
                     mapper_timetag_t *timetag,
                     void *value)
@@ -58,6 +64,7 @@ void on_signal_gain(mapper_signal msig,
 }
 
 void on_signal_spin(mapper_signal msig,
+                    int instance_id,
                     mapper_db_signal props,
                     mapper_timetag_t *timetag,
                     void *value)
@@ -69,6 +76,7 @@ void on_signal_spin(mapper_signal msig,
 }
 
 void on_signal_fade(mapper_signal msig,
+                    int instance_id,
                     mapper_db_signal props,
                     mapper_timetag_t *timetag,
                     void *value)
@@ -80,6 +88,7 @@ void on_signal_fade(mapper_signal msig,
 }
 
 void on_signal_dir(mapper_signal msig,
+                   int instance_id,
                    mapper_db_signal props,
                    mapper_timetag_t *timetag,
                    void *value)
@@ -92,6 +101,7 @@ void on_signal_dir(mapper_signal msig,
 }
 
 void on_signal_flow(mapper_signal msig,
+                    int instance_id,
                     mapper_db_signal props,
                     mapper_timetag_t *timetag,
                     void *value)
@@ -122,7 +132,7 @@ void initMapper()
                        &fmn, &fmx, on_signal_border_gain, 0);
         sprintf(str, "/node/%ld/position", i+1);
         mdev_add_input(dev, str, 2, 'i', 0,
-                       &mn, &mx, on_signal, (void*)(i));
+                       &mn, &mx, on_signal_pos, (void*)(i));
         sprintf(str, "/node/%ld/gain", i+1);
         mdev_add_input(dev, str, 1, 'f', 0,
                        &fmn, &fmx, on_signal_gain, (void*)(i));
