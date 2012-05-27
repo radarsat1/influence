@@ -36,8 +36,7 @@ void make_connections()
     char signame1[1024], signame2[1024];
     struct _autoConnectState *acs = &autoConnectState;
 
-    sprintf(signame1, "%s/node/%d/observation",
-            acs->influence_device_name, mdev_ordinal(acs->dev));
+    sprintf(signame1, "%s/node/observation", acs->influence_device_name);
 
     sprintf(signame2, "%s/observation", mdev_name(acs->dev));
 
@@ -45,8 +44,7 @@ void make_connections()
 
     sprintf(signame1, "%s/position", mdev_name(acs->dev));
 
-    sprintf(signame2, "%s/node/%d/position",
-            acs->influence_device_name, mdev_ordinal(acs->dev));
+    sprintf(signame2, "%s/node/position", acs->influence_device_name);
 
     mapper_monitor_connect(acs->mon, signame1, signame2, 0, 0);
 
@@ -255,7 +253,7 @@ int main(int argc, char *argv[])
             int p[2];
             p[0] = (int)pos[0];
             p[1] = (int)pos[1];
-            msig_update(sig_pos, p);
+            msig_update_instance(sig_pos, 0, p);
         }
     }
 
