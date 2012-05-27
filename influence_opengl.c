@@ -55,6 +55,7 @@ int fullscreen = 0;
 
 struct _agent agents[maxAgents];
 float borderGain = 5;
+float convolutionGain = 0.999;
 
 int showField = 0;
 
@@ -182,7 +183,7 @@ void loadFieldShader()
 
     glUseProgramObjectARB(fieldShaderId);
     glUniform1fvARB(kernelsUniform, 25, kernels);
-    glUniform1fARB(gainUniform, 0.99999);
+    glUniform1fARB(gainUniform, convolutionGain);
 }
 
 void generateFBO()
@@ -337,16 +338,16 @@ void drawBorder()
     if (!borderGain)
         return;
     glBegin(GL_LINES);
-    glColor4f(borderGain,0,-borderGain,0);
+    glColor4f(borderGain,0,0,0);
     glVertex2f(1, 1);
     glVertex2f(1, field_height-1);
-    glColor4f(0,borderGain,0,-borderGain);
+    glColor4f(0,borderGain,0,0);
     glVertex2f(1, 1);
     glVertex2f(field_width-1, 1);
-    glColor4f(-borderGain,0,borderGain,0);
+    glColor4f(-borderGain,0,0,0);
     glVertex2f(field_width-1, field_height-1);
     glVertex2f(field_width-1, 1);
-    glColor4f(0,-borderGain,0,borderGain);
+    glColor4f(0,-borderGain,0,0);
     glVertex2f(field_width-1, field_height-1);
     glVertex2f(1, field_height-1);
     glEnd();
