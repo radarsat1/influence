@@ -371,7 +371,7 @@ void drawMouse()
             glVertex2i(prev_mouse_x, prev_mouse_y);
             glColor4f(mouse_x - prev_mouse_x,
                       mouse_y - prev_mouse_y,
-                      0.9,0);
+                      0,0.9);
             glVertex2i(mouse_x, mouse_y);
             glEnd();
         }
