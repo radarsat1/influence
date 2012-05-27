@@ -20,10 +20,8 @@ void on_draw()
     int i;
     for (i=0; i < maxAgents; i++)
     {
-        if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
-            printf("updating agent obs\n");
+        if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1)
             msig_update(sigobs[i], agents[i].obs);
-        }
     }
 }
 
@@ -48,7 +46,6 @@ void on_signal_pos(mapper_signal msig,
     int index = (int)(long)p->user_data;
     agents[index].pos[0] = pos[0];
     agents[index].pos[1] = pos[1];
-    printf("on_signal_pos %i %i\n", pos[0], pos[1]);
 }
 
 void on_signal_gain(mapper_signal msig,

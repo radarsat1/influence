@@ -255,7 +255,6 @@ int main(int argc, char *argv[])
             int p[2];
             p[0] = (int)pos[0];
             p[1] = (int)pos[1];
-            printf("updating pos\n");
             msig_update(sig_pos, p);
         }
     }
