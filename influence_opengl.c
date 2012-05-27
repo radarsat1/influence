@@ -358,16 +358,16 @@ void drawBorder()
     if (!borderGain)
         return;
     glBegin(GL_LINES);
-    glColor4f(borderGain,0,-borderGain,0);
+    glColor4f(borderGain,0,0,0);
     glVertex2f(1, 1);
     glVertex2f(1, field_height-1);
-    glColor4f(0,borderGain,0,-borderGain);
+    glColor4f(0,borderGain,0,0);
     glVertex2f(1, 1);
     glVertex2f(field_width-1, 1);
-    glColor4f(-borderGain,0,borderGain,0);
+    glColor4f(-borderGain,0,0,0);
     glVertex2f(field_width-1, field_height-1);
     glVertex2f(field_width-1, 1);
-    glColor4f(0,-borderGain,0,borderGain);
+    glColor4f(0,-borderGain,0,0);
     glVertex2f(field_width-1, field_height-1);
     glVertex2f(1, field_height-1);
     glEnd();
