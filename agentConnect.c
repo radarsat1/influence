@@ -269,6 +269,8 @@ int main(int argc, char *argv[])
             p[0] = (int)pos[0];
             p[1] = (int)pos[1];
             msig_update(sig_pos, p);
+
+            counter = 0;
         }
         else {
             if (counter++ > 100) {
