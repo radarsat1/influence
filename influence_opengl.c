@@ -45,8 +45,8 @@ GLuint src = 0, dest = 1;
 
 int update_rate = 50;
 int number_of_passes = 1;
-int x_offset = -1;
-int y_offset = -1;
+int x_offset = 0;
+int y_offset = 0;
 int field_width = 500;
 int field_height = 500;
 int window_width = 0;
