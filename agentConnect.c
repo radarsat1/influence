@@ -233,6 +233,7 @@ int main(int argc, char *argv[])
     float damping = 0.9;
     float limit = 1;
     float vel[2] = {0,0};
+    int counter = 0;
 
     while (!done) {
         mapper_monitor_poll(info->mon, 0);
@@ -273,13 +274,17 @@ int main(int argc, char *argv[])
             p[0] = (int)pos[0];
             p[1] = (int)pos[1];
             msig_update_instance(sig_pos, 0, p);
+
+            counter = 0;
         }
         else {
-            usleep(100 * 1000);
-            int p[2];
-            p[0] = (int)pos[0];
-            p[1] = (int)pos[1];
-            msig_update_instance(sig_pos, 0, p);
+            if (counter++ > 100) {
+                int p[2];
+                p[0] = (int)pos[0];
+                p[1] = (int)pos[1];
+                msig_update_instance(sig_pos, 0, p);
+                counter = 0;
+            }
         }
     }
 
