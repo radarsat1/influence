@@ -3,12 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <unistd.h>
 #include <mapper/mapper.h>
-
-#ifdef WIN32
-#define usleep(x) Sleep(x/1000)
-#endif
 
 struct _agentInfo
 {
@@ -233,6 +228,7 @@ int main(int argc, char *argv[])
     float damping = 0.9;
     float limit = 1;
     float vel[2] = {0,0};
+    int counter = 0;
 
     while (!done) {
         mapper_monitor_poll(info->mon, 0);
@@ -275,11 +271,13 @@ int main(int argc, char *argv[])
             msig_update(sig_pos, p);
         }
         else {
-            usleep(500);
-            int p[2];
-            p[0] = (int)pos[0];
-            p[1] = (int)pos[1];
-            msig_update(sig_pos, p);
+            if (counter++ > 100) {
+                int p[2];
+                p[0] = (int)pos[0];
+                p[1] = (int)pos[1];
+                msig_update(sig_pos, p);
+                counter = 0;
+            }
         }
     }
 
