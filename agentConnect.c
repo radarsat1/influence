@@ -258,6 +258,8 @@ int main(int argc, char *argv[])
     }
 
 done:
+    msig_release_instance(sig_pos, 0);
+    mdev_poll(dev, 100);
     autoDisconnect();
     return 0;
 }

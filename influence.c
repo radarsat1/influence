@@ -31,6 +31,9 @@ void on_signal_border_gain(mapper_signal msig,
                            mapper_timetag_t *timetag,
                            void *value)
 {
+    if (!value)
+        return;
+
     float *gain = (float*)value;
     borderGain = *gain;
 }
@@ -41,9 +44,15 @@ void on_signal_pos(mapper_signal msig,
                    mapper_timetag_t *timetag,
                    void *value)
 {
-    int *pos = (int*)value;
-    agents[instance_id].pos[0] = pos[0];
-    agents[instance_id].pos[1] = pos[1];
+    if (value) {
+        int *pos = (int*)value;
+        agents[instance_id].pos[0] = pos[0];
+        agents[instance_id].pos[1] = pos[1];
+    }
+    else {
+        agents[instance_id].pos[0] = -1;
+        agents[instance_id].pos[1] = -1;
+    }
 }
 
 void on_signal_gain(mapper_signal msig,
