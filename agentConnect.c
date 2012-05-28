@@ -3,12 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <unistd.h>
 #include <mapper/mapper.h>
-
-#ifdef WIN32
-#define usleep(x) Sleep(x/1000)
-#endif
 
 struct _agentInfo
 {
