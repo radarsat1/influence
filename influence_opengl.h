@@ -20,6 +20,7 @@ struct _agent
 
 extern struct _agent agents[];
 extern float borderGain;
+extern void mapperLogout();
 extern void (*vfgl_DrawCallback)();
 
 // Options

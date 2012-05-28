@@ -202,6 +202,16 @@ void CmdLine(int argc, char **argv)
     }
 }
 
+void mapperLogout()
+{
+    int i;
+    printf("Cleaning up...\n");
+    for (i=0; i<maxAgents; i++) {
+        msig_release_instance(sigobs, i);
+    }
+    mdev_free(dev);
+}
+
 int main(int argc, char** argv)
 {
     CmdLine(argc, argv);
