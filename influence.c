@@ -209,6 +209,7 @@ void mapperLogout()
     for (i=0; i<maxAgents; i++) {
         msig_release_instance(sigobs, i);
     }
+    mdev_poll(dev, 100);
     mdev_free(dev);
 }
 
