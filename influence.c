@@ -193,6 +193,12 @@ void CmdLine(int argc, char **argv)
     }
 }
 
+void mapperLogout()
+{
+    printf("Cleaning up...\n");
+    mdev_free(dev);
+}
+
 int main(int argc, char** argv)
 {
     CmdLine(argc, argv);

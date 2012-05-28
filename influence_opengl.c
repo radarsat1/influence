@@ -473,8 +473,10 @@ void renderScene(void)
 
 void processNormalKeys(unsigned char key, int x, int y) {
 	
-	if (key == 27) 
+	if (key == 27) {
+        mapperLogout();
 		exit(0);
+    }
     if (key == 'f') {
         if (fullscreen) {
             glutReshapeWindow(before_fs_window_width,
@@ -486,7 +488,7 @@ void processNormalKeys(unsigned char key, int x, int y) {
             fullscreen = 1;
         }
     }
-    if (key == ' ') {
+    else if (key == ' ') {
         showField++;
         if (showField > 2) {
             showField = 0;
