@@ -35,11 +35,12 @@ InfluenceEnvironment::~InfluenceEnvironment() {
 void InfluenceEnvironment::init() {
   dev = mdev_new(devNamePrefix, devInitialPort, 0);
 
-  mdev_add_input(dev, "/observation", observationDim + 1, 'f', 0, 0, 0,
+  mdev_add_input(dev, "/observation", observationDim, 'f', 0, 0, 0,
                  (mapper_signal_handler*)updateInput, this);
 
-  // TODO: Actions range (min/max) should be known in advance somehow (this is a limitation of the current implemenation)
-  outsig = mdev_add_output(dev, "/action", actionDim, 'i', 0, 0, 0);
+  // Output "action" is position (x,y)
+  outsigX = mdev_add_output(dev, "/position/x", 1, 'i', 0, 0, 0);
+  outsigY = mdev_add_output(dev, "/position/y", 1, 'i', 0, 0, 0);
 
   if (autoConnect)
     autoConnectDevice(dev);
@@ -47,17 +48,77 @@ void InfluenceEnvironment::init() {
 
 Observation* InfluenceEnvironment::start() {
   printf("Starting env\n");
+  pos[0] = rand()%WIDTH/2+WIDTH/4;
+  pos[1] = rand()%WIDTH/2+WIDTH/4;
+  vel[0] = vel[1] = 0;
+
+  // Send position.
+  int x = (int)pos[0];
+  int y = (int)pos[1];
+  msig_update(outsigX, &x);
+  msig_update(outsigY, &y);
+
+  // Wait for response.
   mdev_poll(dev, 1000);
   return &currentObservation;
 }
 
 Observation* InfluenceEnvironment::step(const Action* action) {
   printf("Stepping env\n");
-  printf("--> sending %d ...\n", action->actions[0]);
-  msig_update(outsig, action->actions);
-  while (!mdev_poll(dev, 1) );
+
+  // Update velocity depending on chosen action.
+  float gain = 2;
+  float limit = 1;
+
+  float magnet = (action->actions[0] == 0 ? -1 : +1);
+  //vel[0] = vel[1] = gain;
+  magnet = 1;
+  vel[0] += magnet * gain * (currentObservation[0] - currentObservation[2]);
+  vel[1] += magnet * gain * (currentObservation[1] - currentObservation[3]);
+
+  pos[0] += vel[0];
+  pos[1] += vel[1];
+
+  if (vel[0] >  limit) vel[0] =  limit;
+  if (vel[0] < -limit) vel[0] = -limit;
+  if (vel[1] >  limit) vel[1] =  limit;
+  if (vel[1] < -limit) vel[1] = -limit;
+
+  if (pos[0] < 0) {
+    pos[0] = 0;
+    vel[0] *= -0.95;
+  }
+
+  if (pos[0] >= WIDTH) {
+    pos[0] = WIDTH-1;
+    vel[0] *= -0.95;
+  }
+
+  if (pos[1] < 0) {
+    pos[1] = 0;
+    vel[1] *= -0.95;
+  }
+
+  if (pos[1] >= HEIGHT) {
+    pos[1] = HEIGHT-1;
+    vel[1] *= -0.95;
+  }
+
+  // Send position.
+  int x = (int)pos[0];
+  int y = (int)pos[1];
+  msig_update(outsigX, &x);
+  msig_update(outsigY, &y);
+  
+  // Wait for retroaction.
+  while (! mdev_poll(dev, 10) );
+
+  // Compute reward.
+
+  currentObservation.reward = sqrt( vel[0]*vel[0] + vel[1]*vel[1] ); // go fast
+
   printf("--> receiving reward = %f, data = %f ...\n", currentObservation.reward, currentObservation[0]);
-  //usleep(100);
+
   return &currentObservation;
 }
 
@@ -65,8 +126,6 @@ void InfluenceEnvironment::updateInput(mapper_signal sig, mapper_db_signal props
                                         mapper_timetag_t *timetag, float *value) {
   printf("update input called %f\n", *value);
   RLObservation& obs = ((InfluenceEnvironment*)props->user_data)->currentObservation;
-  unsigned int k;
-  for (k=0; k<obs.dim; k++)
-    obs[k] = value[k];
-  obs.reward = value[k];
+  for (unsigned int i=0; i<obs.dim; i++)
+    obs[i] = value[i];
 }

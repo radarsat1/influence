@@ -32,7 +32,7 @@
 
 
 // xa, ya, xu, yu, d(a,u), d(a,O), m_a, m_u
-#define DIM_OBSERVATIONS 8
+#define DIM_OBSERVATIONS 4
 #define DIM_ACTIONS 1
 
 // Parameters
@@ -50,9 +50,18 @@ const unsigned int N_ACTIONS[] = { 2 };
 #include <stdio.h>
 #include <cstring>
 
+int done = 0;
+
+void ctrlc(int sig)
+{
+    done = 1;
+}
+
 //unsigned char buffer[STATIC_ALLOCATOR_SIZE];
 //StaticAllocator myAlloc(buffer, STATIC_ALLOCATOR_SIZE);
 int main(int argc, char** argv) {
+  signal(SIGINT, ctrlc);
+
   if (argc > 8 || (argc > 1 && strcmp(argv[1], "-h") == 0)) {
     printf("Usage: %s [n_hidden=%d] [learning_rate=%f] [epsilon=%f] [lambda=%f] [gamma=%f] [dim_observations=%d] [autoconnect=0]\n",
             argv[0], N_HIDDEN, LEARNING_RATE, EPSILON, LAMBDA, GAMMA, DIM_OBSERVATIONS);
@@ -66,7 +75,7 @@ int main(int argc, char** argv) {
   float lambda        = (++arg < argc ? atof(argv[arg]) : LAMBDA);
   float gamma         = (++arg < argc ? atof(argv[arg]) : GAMMA);
   int dimObservations = (++arg < argc ? atoi(argv[arg]) : DIM_OBSERVATIONS);
-  bool autoConnect    = (++arg < argc ? atoi(argv[arg]) : false);
+  bool autoConnect    = (++arg < argc ? atoi(argv[arg]) : true);
 
   printf("N hidden: %d\n", nHidden);
   printf("Learning rate: %f\n", learningRate);
@@ -80,13 +89,13 @@ int main(int argc, char** argv) {
   NeuralNetwork net(dimObservations + DIM_ACTIONS, nHidden, 1, learningRate);
   QLearningAgent agent(&net, dimObservations, DIM_ACTIONS, N_ACTIONS,
                        lambda, gamma, &egreedy, false); // lambda = 1.0 => no history
-  InfluenceEnvironment env(dimObservations, DIM_ACTIONS, "qualiaAgent", autoConnect, 9000);
+  InfluenceEnvironment env(dimObservations, DIM_ACTIONS, "agent", autoConnect, 9000);
   RLQualia qualia(&agent, &env);
 
   qualia.init();
   qualia.start();
 
-  for (;;) {
+  while (!done) {
     unsigned long nSteps = 0;
     float totalReward = 0;
     for (int i=0; i<2400; i++) {
@@ -105,6 +114,7 @@ int main(int argc, char** argv) {
 //    printf("\n");
 #endif
   }
+  autoDisconnectDevice();
 
 //  if (myAlloc.nLeaks)
 //    printf("WARNING: Static Allocator has leaks: %d\n", myAlloc.nLeaks);
