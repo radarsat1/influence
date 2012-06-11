@@ -44,8 +44,10 @@ void on_signal_pos(mapper_signal msig,
                    mapper_timetag_t *timetag,
                    void *value)
 {
+    printf("on_signal_pos()\n");
     if (value) {
         int *pos = (int*)value;
+        printf("setting position to %i %i\n", pos[0], pos[1]);
         agents[instance_id].pos[0] = pos[0];
         agents[instance_id].pos[1] = pos[1];
     }
@@ -61,6 +63,8 @@ void on_signal_gain(mapper_signal msig,
                     mapper_timetag_t *timetag,
                     void *value)
 {
+    if (!value)
+        return;
     float *gain = (float*)value;
     agents[instance_id].gain = *gain;
 }
@@ -71,6 +75,8 @@ void on_signal_spin(mapper_signal msig,
                     mapper_timetag_t *timetag,
                     void *value)
 {
+    if (!value)
+        return;
     float *spin = (float*)value;
     agents[instance_id].spin = *spin;
 }
@@ -81,6 +87,8 @@ void on_signal_fade(mapper_signal msig,
                     mapper_timetag_t *timetag,
                     void *value)
 {
+    if (!value)
+        return;
     float *fade = (float*)value;
     agents[instance_id].fade = *fade;
 }
@@ -91,6 +99,8 @@ void on_signal_dir(mapper_signal msig,
                    mapper_timetag_t *timetag,
                    void *value)
 {
+    if (!value)
+        return;
     float *dir = (float*)value;
     agents[instance_id].dir[0] = cos(*dir);
     agents[instance_id].dir[1] = sin(*dir);
@@ -102,6 +112,8 @@ void on_signal_flow(mapper_signal msig,
                     mapper_timetag_t *timetag,
                     void *value)
 {
+    if (!value)
+        return;
     float *flow = (float*)value;
     agents[instance_id].flow = *flow;
 }
@@ -115,15 +127,14 @@ void initMapper()
     dev = mdev_new("influence", 9000, 0);
     mapper_signal input;
 
+    fmn = 0.0, fmx = 1.0;
+    mdev_add_input(dev, "/border_gain", 1, 'f', 0, &fmn,
+                   &fmx, on_signal_border_gain, 0);
+
     fmn = -1.0, fmx = 1.0;
     sigobs = mdev_add_output(dev, "/node/observation",
                              2, 'f', 0, &fmn, &fmx);
     msig_reserve_instances(sigobs, 19);
-
-    fmn = 0.0;
-    input = mdev_add_input(dev, "/border_gain", 1, 'f', 0, &fmn,
-                           &fmx, on_signal_border_gain, 0);
-    msig_reserve_instances(input, 19);
 
     input = mdev_add_input(dev, "/node/position", 2, 'i', 0, &mn,
                            &mx, on_signal_pos, (void*)(i));
