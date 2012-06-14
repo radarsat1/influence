@@ -44,10 +44,8 @@ void on_signal_pos(mapper_signal msig,
                    mapper_timetag_t *timetag,
                    void *value)
 {
-    printf("on_signal_pos()\n");
     if (value) {
         int *pos = (int*)value;
-        printf("setting position to %i %i\n", pos[0], pos[1]);
         agents[instance_id].pos[0] = pos[0];
         agents[instance_id].pos[1] = pos[1];
     }

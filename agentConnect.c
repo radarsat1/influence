@@ -21,13 +21,16 @@ struct _agentInfo
 
 mapper_signal sig_pos[2],
               sig_vel[2],
+              sig_accel[2],
+              sig_force = 0,
               sig_gain = 0,
               sig_spin = 0,
               sig_fade = 0,
               sig_dir = 0,
               sig_flow = 0;
 
-float gain = 0.001;
+float mass = 1.0;
+float gain = 0.0001;
 float damping = 0.6;
 float limit = 0.1;
 
@@ -44,7 +47,7 @@ void make_influence_connections()
 
     sprintf(signame1, "%s/node/observation", info->influence_device_name);
 
-    sprintf(signame2, "%s/observation", mdev_name(info->dev));
+    sprintf(signame2, "%s/force", mdev_name(info->dev));
 
     mapper_monitor_connect(info->mon, signame1, signame2, 0, 0);
 
@@ -60,82 +63,36 @@ void make_xagora_connections()
     char signame1[1024], signame2[1024];
     struct _agentInfo *info = &agentInfo;
 
+    sprintf(signame1, "%s/position", mdev_name(info->dev));
+
     sprintf(signame2, "%s/Butterfly%d",
             info->xagora_device_name, mdev_ordinal(info->dev));
 
     mapper_monitor_connect(info->mon, signame1, signame2, 0, 0);
 }
 
-void observation_handler(mapper_signal msig,
-                         int instance_id,
-                         mapper_db_signal props,
-                         mapper_timetag_t *timetag,
-                         void *value)
+void force_handler(mapper_signal msig,
+                   int instance_id,
+                   mapper_db_signal props,
+                   mapper_timetag_t *timetag,
+                   void *value)
 {
     if (!value)
         return;
-    float *obs = (float *)value;
-    float vel[2], *pvel, pos[2], *ppos;
+    float *force = (float *)value;
+    float accel[2], *paccel;
 
-    ppos = (float *)msig_instance_value(sig_pos[0], instance_id, 0);
-    pvel = (float *)msig_instance_value(sig_vel[0], instance_id, 0);
-    if (!ppos || !pvel) {
-        printf("error: cannot retrieve state for instance %i\n", instance_id);
+    paccel = (float *)msig_instance_value(sig_accel[0], instance_id, 0);
+    if (!paccel) {
+        printf("error: force_handler cannot retrieve acceleration for instance %i\n",
+               instance_id);
         return;
     }
 
-    vel[0] = pvel[0] + obs[0] * gain;
-    vel[1] = pvel[1] + obs[1] * gain;
-    vel[0] *= damping;
-    vel[1] *= damping;
-    if (vel[0] >  limit) vel[0] =  limit;
-    if (vel[0] < -limit) vel[0] = -limit;
-    if (vel[1] >  limit) vel[1] =  limit;
-    if (vel[1] < -limit) vel[1] = -limit;
+    accel[0] = paccel[0] + force[0] / mass * gain;
+    accel[1] = paccel[1] + force[1] / mass * gain;
 
-    pos[0] = ppos[0] + vel[0];
-    pos[1] = ppos[1] + vel[1];
-    if (pos[0] < -1) {
-        pos[0] = -1;
-        vel[0] *= -0.95;
-    }
-    if (pos[0] >= 1) {
-        pos[0] = 1;
-        vel[0] *= -0.95;
-    }
-    if (pos[1] < -1) {
-        pos[1] = -1;
-        vel[1] *= -0.95;
-    }
-    if (pos[1] >= 1) {
-        pos[1] = 1;
-        vel[1] *= -0.95;
-    }
-
-    msig_update_instance(sig_vel[0], instance_id, vel);
-    msig_update_instance(sig_vel[1], instance_id, vel);
-    msig_update_instance(sig_pos[0], instance_id, pos);
-    msig_update_instance(sig_pos[1], instance_id, pos);
-}
-
-void position_handler(mapper_signal msig,
-                      int instance_id,
-                      mapper_db_signal props,
-                      mapper_timetag_t *timetag,
-                      void *value)
-{
-    if (!value)
-        return;
-}
-
-void velocity_handler(mapper_signal msig,
-                      int instance_id,
-                      mapper_db_signal props,
-                      mapper_timetag_t *timetag,
-                      void *value)
-{
-    if (!value)
-        return;
+    msig_update_instance(sig_accel[0], instance_id, accel);
 }
 
 void dev_db_callback(mapper_db_device record,
@@ -146,13 +103,13 @@ void dev_db_callback(mapper_db_device record,
     struct _agentInfo *info = (struct _agentInfo*)user;
 
     if (action == MDB_NEW) {
-        if (strcmp(record->name, info->influence_device_name)==0) {
+        if (strcmp(record->name, info->influence_device_name)==0 ||
+            strcmp(record->name, info->xagora_device_name)==0) {
             mapper_monitor_link(info->mon, mdev_name(info->dev),
                                 record->name);
+            mapper_monitor_link(info->mon, record->name,
+                                mdev_name(info->dev));
         }
-        else if (strcmp(record->name, info->xagora_device_name)==0)
-            mapper_monitor_link(info->mon, mdev_name(info->dev),
-                                record->name);
     }
     else if (action == MDB_REMOVE) {
         if (strcmp(record->name, info->influence_device_name)==0) {
@@ -171,10 +128,12 @@ void link_db_callback(mapper_db_link record,
     struct _agentInfo *info = (struct _agentInfo*)user;
 
     if (action == MDB_NEW) {
-        if ((strcmp(record->dest_name, info->influence_device_name)==0) &&
-            (strcmp(record->src_name, mdev_name(info->dev))==0)) {
+        if (((strcmp(record->dest_name, info->influence_device_name)==0) &&
+            (strcmp(record->src_name, mdev_name(info->dev))==0)) ||
+            ((strcmp(record->src_name, info->influence_device_name)==0) &&
+             (strcmp(record->dest_name, mdev_name(info->dev))==0))) {
             info->linked_influence++;
-            if (info->linked_influence >= 1)
+            if (info->linked_influence > 1)
                 make_influence_connections();
         }
         else if ((strcmp(record->src_name, mdev_name(info->dev))==0) &&
@@ -192,6 +151,7 @@ void link_db_callback(mapper_db_link record,
 struct _agentInfo *agentInit()
 {
     int i;
+    float init[2] = {0, 0};
     struct _agentInfo *info = &agentInfo;
     memset(info, 0, sizeof(struct _agentInfo));
 
@@ -216,39 +176,46 @@ struct _agentInfo *agentInit()
 
     // add signals
     float mn=-1, mx=1;
-    mapper_signal temp;
-    temp = mdev_add_input(info->dev, "observation", 2, 'f', "norm", &mn, &mx,
-                          observation_handler, 0);
-    msig_reserve_instances(temp, numInstances-1);
+    sig_force = mdev_add_input(info->dev, "force", 2, 'f', "N", &mn, &mx,
+                               force_handler, 0);
+    msig_reserve_instances(sig_force, numInstances-1);
 
-    sig_vel[0] = mdev_add_input(info->dev, "velocity", 2, 'f', 0,
-                                &mn, &mx, velocity_handler, 0);
+    sig_accel[0] = mdev_add_input(info->dev, "acceleration", 2, 'f', 0,
+                                &mn, &mx, 0, 0);
+    msig_reserve_instances(sig_accel[0], numInstances-1);
+    sig_accel[1] = mdev_add_output(info->dev, "acceleration", 2, 'f', 0, &mn, &mx);
+    msig_reserve_instances(sig_accel[1], numInstances-1);
+
+    // initialize accelerations to zero
+    for (i=0; i<numInstances; i++) {
+        msig_update_instance(sig_accel[0], i, init);
+    }
+
+    sig_vel[0] = mdev_add_input(info->dev, "velocity", 2, 'f', "m/s",
+                                &mn, &mx, 0, 0);
     msig_reserve_instances(sig_vel[0], numInstances-1);
-    sig_vel[1] = mdev_add_output(info->dev, "velocity", 2, 'f', 0, &mn, &mx);
+    sig_vel[1] = mdev_add_output(info->dev, "velocity", 2, 'f', "m/s", &mn, &mx);
     msig_reserve_instances(sig_vel[1], numInstances-1);
     
     // initialize velocities to zero
-    float vel[2] = {0, 0};
     for (i=0; i<numInstances; i++) {
-        msig_update_instance(sig_vel[0], i, vel);
+        msig_update_instance(sig_vel[0], i, init);
     }
 
     sig_pos[0] = mdev_add_input(info->dev, "position", 2, 'f', 0,
-                                &mn, &mx, position_handler, 0);
+                                &mn, &mx, 0, 0);
     msig_reserve_instances(sig_pos[0], numInstances-1);
     sig_pos[1] = mdev_add_output(info->dev, "position", 2, 'f', 0, &mn, &mx);
     msig_reserve_instances(sig_pos[1], numInstances-1);
 
     // initialize positions to random values
-    float pos[2];
     for (i=0; i<numInstances; i++) {
-        pos[0] = rand()%1000*0.002-1.0;
-        pos[1] = rand()%1000*0.002-1.0;
-        msig_update_instance(sig_pos[0], i, pos);
+        init[0] = rand()%1000*0.002-1.0;
+        init[1] = rand()%1000*0.002-1.0;
+        msig_update_instance(sig_pos[0], i, init);
     }
 
-    sig_gain = mdev_add_output(info->dev, "gain", 1, 'f',
-                               "normalized", &mn, &mx);
+    sig_gain = mdev_add_output(info->dev, "gain", 1, 'f', "normalized", &mn, &mx);
     msig_reserve_instances(sig_gain, numInstances-1);
 
     mx = 0.9;
@@ -266,7 +233,8 @@ struct _agentInfo *agentInit()
     msig_reserve_instances(sig_dir, numInstances-1);
 
     mn = -1;
-    sig_flow = mdev_add_output(info->dev, "flow", 1, 'f', "noramlized", &mn, &mx);
+    mx = 1;
+    sig_flow = mdev_add_output(info->dev, "flow", 1, 'f', "normalized", &mn, &mx);
     msig_reserve_instances(sig_flow, numInstances-1);
 
     return info;
@@ -328,21 +296,67 @@ int main(int argc, char *argv[])
     if (!info->dev)
         goto done;
 
-    int counter = 0;
+    float *paccel, *pvel, *ppos;
+    float accel[2], vel[2], pos[2];
+
+    while (!mdev_ready(info->dev)) {
+        mapper_monitor_poll(info->mon, 0);
+        mdev_poll(info->dev, 10);
+    }
 
     while (!done) {
         mapper_monitor_poll(info->mon, 0);
-        if (mdev_poll(info->dev, 10)) {
-            counter = 0;
-        }
-        else {
-            if (counter++ > 100) {
-                int p[2] = {0, 0};
-                for (i=0; i<numInstances; i++) {
-                    observation_handler(0, i, 0, 0, p);
-                }
-                counter = 0;
+        mdev_poll(info->dev, 10);
+
+        for (i=0; i<numInstances; i++) {
+            paccel = (float *)msig_instance_value(sig_accel[0], i, 0);
+            pvel = (float *)msig_instance_value(sig_vel[0], i, 0);
+            if (!pvel) {
+                printf("couldn't retrieve vel value for instance %i\n", i);
+                continue;
             }
+            if (!paccel) {
+                printf("couldn't retrieve accel value for %p instance %i\n", sig_accel[0], i);
+                continue;
+            }
+            
+            ppos = (float *)msig_instance_value(sig_pos[0], i, 0);
+            if (!ppos) {
+                printf("couldn't retrieve pos value for instance %i\n", i);
+                continue;
+            }
+
+            accel[0] = paccel[0] * 0.9;
+            accel[1] = paccel[1] * 0.9;
+            vel[0] = pvel[0] * 0.9 + accel[0];
+            vel[1] = pvel[1] * 0.9 + accel[1];
+            pos[0] = ppos[0] + vel[0];
+            pos[1] = ppos[1] + vel[1];
+
+            if (pos[0] < -1) {
+                pos[0] = -1;
+                vel[0] *= -0.95;
+            }
+            if (pos[0] >= 1) {
+                pos[0] = 1;
+                vel[0] *= -0.95;
+            }
+            if (pos[1] < -1) {
+                pos[1] = -1;
+                vel[1] *= -0.95;
+            }
+            if (pos[1] >= 1) {
+                pos[1] = 1;
+                vel[1] *= -0.95;
+            }
+            accel[0] = accel[1] = 0;
+
+            msig_update_instance(sig_accel[0], i, accel);
+            msig_update_instance(sig_accel[1], i, accel);
+            msig_update_instance(sig_vel[0], i, vel);
+            msig_update_instance(sig_vel[1], i, vel);
+            msig_update_instance(sig_pos[0], i, pos);
+            msig_update_instance(sig_pos[1], i, pos);
         }
     }
 
