@@ -15,7 +15,7 @@ mapper_signal sigobs;
 
 void on_draw()
 {
-    mdev_poll(dev, 2);
+    while (mdev_poll(dev, 0)) {}
 
     int i;
     for (i=0; i < maxAgents; i++)

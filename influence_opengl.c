@@ -317,39 +317,18 @@ void drawAgents()
             dir[1] = agents[i].dir[1];
             gain = agents[i].gain;
             flow = agents[i].flow;
-            glReadPixels(agents[i].pos[0]-2+x_offset,
-                         agents[i].pos[1]-2+y_offset,
-                         5, 5,
+            glReadPixels(agents[i].pos[0]+x_offset,
+                         agents[i].pos[1]+y_offset,
+                         1, 1,
                          GL_RGBA, GL_FLOAT, data);
             glBegin(GL_POINTS);
-            glColor4f(data[4*4+0+2*5*4]+cos_spin*gain*(1-flow)+dir[0]*flow,
-                      data[4*4+1+2*5*4]+sin_spin*gain*(1-flow)+dir[1]*flow,
-                      fmax(data[4*4+2+2*5*4],agents[i].fade),
-                      0);
-            glVertex2i(agents[i].pos[0]+2, agents[i].pos[1]);
-
-            glColor4f(data[2*4+0+4*5*4]+sin_spin*-gain*(1-flow)+dir[0]*flow,
-                      data[2*4+1+4*5*4]+cos_spin*gain*(1-flow)+dir[1]*flow,
-                      fmax(data[2*4+2+4*5*4],agents[i].fade),
-                      0);
-            glVertex2f(agents[i].pos[0], agents[i].pos[1]+2);
-
-            glColor4f(data[0*4+0+2*5*4]+cos_spin*-gain*(1-flow)+dir[0]*flow,
-                      data[0*4+1+2*5*4]+sin_spin*-gain*(1-flow)+dir[1]*flow,
-                      fmax(data[0*4+2+2*5*4],agents[i].fade),
-                      0);
-            glVertex2i(agents[i].pos[0]-2, agents[i].pos[1]);
-
-            glColor4f(data[2*4+0+0*5*4]+sin_spin*gain*(1-flow)+dir[0]*flow,
-                      data[2*4+1+0*5*4]+cos_spin*-gain*(1-flow)+dir[1]*flow,
-                      fmax(data[2*4+2+0*5*4],agents[i].fade),
-                      0);
-            glVertex2f(agents[i].pos[0], agents[i].pos[1]-2);
+            glColor4f(data[0], data[1], data[2]+gain, fmax(data[3], agents[i].fade));
+            glVertex2i(agents[i].pos[0], agents[i].pos[1]);
             glEnd();
 
             // we will read agent environment here for efficicency
-            agents[i].obs[0] = data[2*4+0+2*5*4];
-            agents[i].obs[1] = data[2*4+1+2*5*4];
+            agents[i].obs[0] = data[0];
+            agents[i].obs[1] = data[1];
         }
     }
 }
@@ -378,7 +357,7 @@ void drawMouse()
 {
     if (prev_mouse_x > -1 && prev_mouse_y > -1)
     {
-        glColor4f(delta_mouse_x,delta_mouse_y,0.9,0);
+        glColor4f(delta_mouse_x,delta_mouse_y,0,0.9);
         if (prev_mouse_x == mouse_x
             && prev_mouse_y == mouse_y)
         {
@@ -392,7 +371,7 @@ void drawMouse()
             glVertex2i(prev_mouse_x, prev_mouse_y);
             glColor4f(mouse_x - prev_mouse_x,
                       mouse_y - prev_mouse_y,
-                      0.9,0);
+                      0,0.9);
             glVertex2i(mouse_x, mouse_y);
             glEnd();
         }
@@ -566,7 +545,7 @@ void vfgl_Init(int argc, char** argv)
     for (i=0; i < maxAgents; i++) {
         agents[i].pos[0] = -1;
         agents[i].pos[1] = -1;
-        agents[i].gain = 5;
+        agents[i].gain = 1;
         agents[i].spin = 0;
         agents[i].fade = 0;
         agents[i].dir[0] = 1;
