@@ -40,6 +40,16 @@ float limit = 0.1;
 int numInstances = 1;
 int done = 0;
 
+void make_influence_links(const char *source, const char *destination)
+{
+    lo_address a = lo_address_new_from_url("osc.udp://224.0.1.3:7570");
+    lo_address_set_ttl(a, 1);
+
+    lo_send(a, "/link", "sss", source, destination, source);
+
+    lo_address_free(a);
+}
+
 void make_influence_connections()
 {
     char signame1[1024], signame2[1024];
@@ -105,10 +115,7 @@ void dev_db_callback(mapper_db_device record,
     if (action == MDB_NEW) {
         if (strcmp(record->name, info->influence_device_name)==0 ||
             strcmp(record->name, info->xagora_device_name)==0) {
-            mapper_monitor_link(info->mon, mdev_name(info->dev),
-                                record->name);
-            mapper_monitor_link(info->mon, record->name,
-                                mdev_name(info->dev));
+            make_influence_links(mdev_name(info->dev), record->name);
         }
     }
     else if (action == MDB_REMOVE) {
