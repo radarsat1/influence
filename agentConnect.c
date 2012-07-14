@@ -40,16 +40,6 @@ float limit = 0.1;
 int numInstances = 1;
 int done = 0;
 
-void make_influence_links(const char *source, const char *destination)
-{
-    lo_address a = lo_address_new_from_url("osc.udp://224.0.1.3:7570");
-    lo_address_set_ttl(a, 1);
-
-    lo_send(a, "/link", "sss", source, destination, source);
-
-    lo_address_free(a);
-}
-
 void make_influence_connections()
 {
     char signame1[1024], signame2[1024];
@@ -113,9 +103,17 @@ void dev_db_callback(mapper_db_device record,
     struct _agentInfo *info = (struct _agentInfo*)user;
 
     if (action == MDB_NEW) {
-        if (strcmp(record->name, info->influence_device_name)==0 ||
-            strcmp(record->name, info->xagora_device_name)==0) {
-            make_influence_links(mdev_name(info->dev), record->name);
+        if (strcmp(record->name, info->influence_device_name)==0) {
+            mapper_db_link_t props;
+            props.num_scopes = 1;
+            int id = mdev_id(info->dev);
+            props.scopes = &id;
+            mapper_monitor_link(info->mon, mdev_name(info->dev), record->name, 0, 0);
+            mapper_monitor_link(info->mon, record->name, mdev_name(info->dev),
+                                &props, LINK_NUM_SCOPES | LINK_SCOPES);
+        }
+        else if (strcmp(record->name, info->xagora_device_name)==0) {
+            // make links to XAgora
         }
     }
     else if (action == MDB_REMOVE) {
@@ -168,7 +166,7 @@ struct _agentInfo *agentInit()
     info->admin = mapper_admin_new(0, 0, 0);
 
     // add device
-    info->dev = mdev_new("agent", 9000, info->admin);
+    info->dev = mdev_new("agent", info->admin);
     while (!mdev_ready(info->dev)) {
         mdev_poll(info->dev, 100);
     }

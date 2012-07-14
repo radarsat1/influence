@@ -122,7 +122,7 @@ void initMapper()
     int mn = 0, mx = field_width;
     float fmn = 0, fmx = 1.0;
 
-    dev = mdev_new("influence", 9000, 0);
+    dev = mdev_new("influence", 0);
     mapper_signal input;
 
     fmn = 0.0, fmx = 1.0;
