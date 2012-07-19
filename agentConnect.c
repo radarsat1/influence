@@ -106,11 +106,11 @@ void dev_db_callback(mapper_db_device record,
         if (strcmp(record->name, info->influence_device_name)==0) {
             mapper_db_link_t props;
             props.num_scopes = 1;
-            int id = mdev_id(info->dev);
-            props.scopes = &id;
+            char *name = (char *)mdev_name(info->dev);
+            props.scope_names = &name;
             mapper_monitor_link(info->mon, mdev_name(info->dev), record->name, 0, 0);
             mapper_monitor_link(info->mon, record->name, mdev_name(info->dev),
-                                &props, LINK_NUM_SCOPES | LINK_SCOPES);
+                                &props, LINK_NUM_SCOPES | LINK_SCOPE_NAMES);
         }
         else if (strcmp(record->name, info->xagora_device_name)==0) {
             // make links to XAgora
@@ -166,7 +166,7 @@ struct _agentInfo *agentInit()
     info->admin = mapper_admin_new(0, 0, 0);
 
     // add device
-    info->dev = mdev_new("agent", info->admin);
+    info->dev = mdev_new("agent", 0, info->admin);
     while (!mdev_ready(info->dev)) {
         mdev_poll(info->dev, 100);
     }
