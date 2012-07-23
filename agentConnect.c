@@ -254,8 +254,6 @@ void agentLogout()
     for (i=0; i<numInstances; i++)
         msig_release_instance(sig_pos[1], i);
 
-    mdev_poll(info->dev, 100);
-
     if (info->influence_device_name) {
         mapper_monitor_unlink(info->mon,
                               info->influence_device_name,
@@ -311,7 +309,7 @@ int main(int argc, char *argv[])
 
     while (!done) {
         mapper_monitor_poll(info->mon, 0);
-        mdev_poll(info->dev, 10);
+        mdev_poll(info->dev, 20);
 
         for (i=0; i<numInstances; i++) {
             paccel = (float *)msig_instance_value(sig_accel[0], i, 0);
