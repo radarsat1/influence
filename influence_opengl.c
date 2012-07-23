@@ -308,7 +308,7 @@ void drawAgents()
     int i;
     for (i=0; i < maxAgents; i++)
     {
-        if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1)
+        if (agents[i].active)
         {
             // todo: spin should be read from agent data structure
             sin_spin = sin(agents[i].spin);
@@ -457,7 +457,7 @@ void renderScene(void)
         glBegin(GL_POINTS);
         for (i=0; i < maxAgents; i++)
         {
-            if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
+            if (agents[i].active) {
                 glVertex2f(agents[i].pos[0], window_height-agents[i].pos[1]-2);
             }
         }
@@ -543,8 +543,7 @@ void vfgl_Init(int argc, char** argv)
 {
     int i;
     for (i=0; i < maxAgents; i++) {
-        agents[i].pos[0] = -1;
-        agents[i].pos[1] = -1;
+        agents[i].active = 0;
         agents[i].gain = 1;
         agents[i].spin = 0;
         agents[i].fade = 0;

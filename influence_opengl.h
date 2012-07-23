@@ -9,6 +9,7 @@ void vfgl_Run();
 #define maxAgents 20
 struct _agent
 {
+    int     active;
     float   obs[4];
     int     pos[2];
     float   gain;

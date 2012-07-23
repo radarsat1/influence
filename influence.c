@@ -20,7 +20,7 @@ void on_draw()
     int i;
     for (i=0; i < maxAgents; i++)
     {
-        if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1)
+        if (agents[i].active)
             msig_update_instance(sigobs, i, agents[i].obs);
     }
 }
@@ -45,13 +45,17 @@ void on_signal_pos(mapper_signal msig,
                    void *value)
 {
     if (value) {
+        if (!agents[instance_id].active) {
+            // need to init new instance
+            msig_match_instances(msig, sigobs, instance_id);
+            agents[instance_id].active = 1;
+        }
         int *pos = (int*)value;
         agents[instance_id].pos[0] = pos[0];
         agents[instance_id].pos[1] = pos[1];
     }
     else {
-        agents[instance_id].pos[0] = -1;
-        agents[instance_id].pos[1] = -1;
+        agents[instance_id].active = 0;
     }
 }
 
