@@ -97,7 +97,7 @@ void force_handler(mapper_signal msig,
         return;
     }
 
-    accel = *paccel + *force / mass * gain;
+    accel = (*paccel) + (*force) / mass * gain;
     msig_update_instance(sig, instance_id, &accel);
 }
 
@@ -140,11 +140,12 @@ void link_db_callback(mapper_db_link record,
 
     if (action == MDB_NEW) {
         if (((strcmp(record->dest_name, info->influence_device_name)==0) &&
-            (strcmp(record->src_name, mdev_name(info->dev))==0)) ||
-            ((strcmp(record->src_name, info->influence_device_name)==0) &&
+            (strcmp(record->src_name, mdev_name(info->dev))==0)))
+            info->linked_influence |= 0x01;
+        else if (((strcmp(record->src_name, info->influence_device_name)==0) &&
              (strcmp(record->dest_name, mdev_name(info->dev))==0))) {
-            info->linked_influence++;
-            if (info->linked_influence > 1)
+            info->linked_influence |= 0x02;
+            if (info->linked_influence & 0x03)
                 make_influence_connections();
         }
         else if ((strcmp(record->src_name, mdev_name(info->dev))==0) &&
@@ -210,7 +211,7 @@ struct _agentInfo *agentInit()
     msig_reserve_instances(sig_force[0], numInstances-1);
     sig_force[1] = mdev_add_input(info->dev, "force/y", 1, 'f', "N", &mn, &mx,
                                   force_handler, sig_accel_in[1]);
-    msig_reserve_instances(sig_force[0], numInstances-1);
+    msig_reserve_instances(sig_force[1], numInstances-1);
 
     sig_vel_in[0] = mdev_add_input(info->dev, "velocity/x", 1, 'f', "m/s",
                                    &mn, &mx, 0, 0);
@@ -244,6 +245,7 @@ struct _agentInfo *agentInit()
     for (i=0; i<numInstances; i++) {
         init = rand()%1000*0.002-1.0;
         msig_update_instance(sig_pos_in[0], i, &init);
+        init = rand()%1000*0.002-1.0;
         msig_update_instance(sig_pos_in[1], i, &init);
     }
 

@@ -57,8 +57,7 @@ void on_signal_pos(mapper_signal msig,
             agents[instance_id].active = 1;
         }
         int *pos = (int*)value;
-        agents[instance_id].pos[0] = pos[0];
-        agents[instance_id].pos[1] = pos[1];
+        agents[instance_id].pos[offset] = *pos;
     }
     else {
         agents[instance_id].active = 0;
@@ -128,6 +127,7 @@ void on_signal_flow(mapper_signal msig,
 
 void initMapper()
 {
+    printf("initMapper()\n");
     int mn = 0, mx = field_width;
     float fmn = 0, fmx = 1.0;
 
@@ -148,10 +148,10 @@ void initMapper()
 
     sigpos[0] = mdev_add_input(dev, "/node/position/x", 1, 'i', 0, &mn,
                                &mx, on_signal_pos, (void*)(0));
-    msig_reserve_instances(input, 19);
+    msig_reserve_instances(sigpos[0], 19);
     sigpos[1] = mdev_add_input(dev, "/node/position/y", 1, 'i', 0, &mn,
                                &mx, on_signal_pos, (void*)(1));
-    msig_reserve_instances(input, 19);
+    msig_reserve_instances(sigpos[1], 19);
 
     input = mdev_add_input(dev, "/node/gain", 1, 'f', 0, &fmn,
                            &fmx, on_signal_gain, 0);
