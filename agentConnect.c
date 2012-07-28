@@ -221,7 +221,7 @@ struct _agentInfo *agentInit()
     msig_reserve_instances(sig_vel_in[1], numInstances-1);
     sig_vel_out[0] = mdev_add_output(info->dev, "velocity/x", 1, 'f', "m/s", &mn, &mx);
     msig_reserve_instances(sig_vel_out[0], numInstances-1);
-    sig_vel_out[1] = mdev_add_output(info->dev, "velocity/x", 1, 'f', "m/s", &mn, &mx);
+    sig_vel_out[1] = mdev_add_output(info->dev, "velocity/y", 1, 'f', "m/s", &mn, &mx);
     msig_reserve_instances(sig_vel_out[1], numInstances-1);
     
     // initialize velocities to zero
