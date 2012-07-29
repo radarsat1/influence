@@ -6,7 +6,7 @@ void vfgl_Init(int argc, char** argv);
 void vfgl_CmdLine(int argc, char **argv);
 void vfgl_Run();
 
-#define maxAgents 20
+#define maxAgents 50
 struct _agent
 {
     int     active;

@@ -141,44 +141,44 @@ void initMapper()
     fmn = -1.0, fmx = 1.0;
     sigobs[0] = mdev_add_output(dev, "/node/observation/x",
                                 1, 'f', 0, &fmn, &fmx);
-    msig_reserve_instances(sigobs[0], 19);
+    msig_reserve_instances(sigobs[0], maxAgents-1);
     sigobs[1] = mdev_add_output(dev, "/node/observation/y",
                                 1, 'f', 0, &fmn, &fmx);
-    msig_reserve_instances(sigobs[1], 19);
+    msig_reserve_instances(sigobs[1], maxAgents-1);
 
     sigpos[0] = mdev_add_input(dev, "/node/position/x", 1, 'i', 0, &mn,
                                &mx, on_signal_pos, (void*)(0));
-    msig_reserve_instances(sigpos[0], 19);
+    msig_reserve_instances(sigpos[0], maxAgents-1);
     sigpos[1] = mdev_add_input(dev, "/node/position/y", 1, 'i', 0, &mn,
                                &mx, on_signal_pos, (void*)(1));
-    msig_reserve_instances(sigpos[1], 19);
+    msig_reserve_instances(sigpos[1], maxAgents-1);
 
     input = mdev_add_input(dev, "/node/gain", 1, 'f', 0, &fmn,
                            &fmx, on_signal_gain, 0);
-    msig_reserve_instances(input, 19);
+    msig_reserve_instances(input, maxAgents-1);
 
     fmx = 0.9;
     input = mdev_add_input(dev, "/node/fade", 1, 'f', 0, &fmn,
                            &fmx, on_signal_fade, 0);
-    msig_reserve_instances(input, 19);
+    msig_reserve_instances(input, maxAgents-1);
 
     fmn = -1.5;
     fmx = 1.5;
     input = mdev_add_input(dev, "/node/spin", 1, 'f', 0, &fmn,
                            &fmx, on_signal_spin, 0);
-    msig_reserve_instances(input, 19);
+    msig_reserve_instances(input, maxAgents-1);
 
     fmn = -3.1415926;
     fmx = 3.1415926;
     input = mdev_add_input(dev, "/node/direction", 1, 'f', 0, &fmn,
                            &fmx, on_signal_dir, 0);
-    msig_reserve_instances(input, 19);
+    msig_reserve_instances(input, maxAgents-1);
 
     fmn = -1.0;
     fmx = 1.0;
     input = mdev_add_input(dev, "/node/flow", 1, 'f', 0, &fmn,
                            &fmx, on_signal_flow, 0);
-    msig_reserve_instances(input, 19);
+    msig_reserve_instances(input, maxAgents-1);
 }
 
 void CmdLine(int argc, char **argv)
