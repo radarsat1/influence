@@ -25,12 +25,7 @@ mapper_signal sig_pos_in[2],
               sig_vel_out[2],
               sig_accel_in[2],
               sig_accel_out[2],
-              sig_force[2],
-              sig_gain = 0,
-              sig_spin = 0,
-              sig_fade = 0,
-              sig_dir = 0,
-              sig_flow = 0;
+              sig_force[2];
 
 float mass = 1.0;
 float gain = 0.0001;
@@ -98,7 +93,7 @@ void force_handler(mapper_signal msig,
     }
 
     accel = (*paccel) + (*force) / mass * gain;
-    msig_update_instance(sig, instance_id, &accel);
+    msig_update_instance(sig, instance_id, &accel, 1);
 }
 
 void dev_db_callback(mapper_db_device record,
@@ -202,8 +197,8 @@ struct _agentInfo *agentInit()
 
     // initialize accelerations to zero
     for (i=0; i<numInstances; i++) {
-        msig_update_instance(sig_accel_in[0], i, &init);
-        msig_update_instance(sig_accel_in[1], i, &init);
+        msig_update_instance(sig_accel_in[0], i, &init, 1);
+        msig_update_instance(sig_accel_in[1], i, &init, 1);
     }
 
     sig_force[0] = mdev_add_input(info->dev, "force/x", 1, 'f', "N", &mn, &mx,
@@ -226,8 +221,8 @@ struct _agentInfo *agentInit()
     
     // initialize velocities to zero
     for (i=0; i<numInstances; i++) {
-        msig_update_instance(sig_vel_in[0], i, &init);
-        msig_update_instance(sig_vel_in[1], i, &init);
+        msig_update_instance(sig_vel_in[0], i, &init, 1);
+        msig_update_instance(sig_vel_in[1], i, &init, 1);
     }
 
     sig_pos_in[0] = mdev_add_input(info->dev, "position/x", 1, 'f', 0,
@@ -244,32 +239,10 @@ struct _agentInfo *agentInit()
     // initialize positions to random values
     for (i=0; i<numInstances; i++) {
         init = rand()%1000*0.002-1.0;
-        msig_update_instance(sig_pos_in[0], i, &init);
+        msig_update_instance(sig_pos_in[0], i, &init, 1);
         init = rand()%1000*0.002-1.0;
-        msig_update_instance(sig_pos_in[1], i, &init);
+        msig_update_instance(sig_pos_in[1], i, &init, 1);
     }
-
-    sig_gain = mdev_add_output(info->dev, "gain", 1, 'f', "normalized", &mn, &mx);
-    msig_reserve_instances(sig_gain, numInstances-1);
-
-    mx = 0.9;
-    sig_fade = mdev_add_output(info->dev, "fade", 1, 'f', "normalized", &mn, &mx);
-    msig_reserve_instances(sig_fade, numInstances-1);
-
-    mn = -1.5;
-    mx = 1.5;
-    sig_spin = mdev_add_output(info->dev, "spin", 1, 'f', "radians", &mn, &mx);
-    msig_reserve_instances(sig_spin, numInstances-1);
-
-    mn = -3.1415926;
-    mx = 3.1315926;
-    sig_dir = mdev_add_output(info->dev, "direction", 1, 'f', "radians", &mn, &mx);
-    msig_reserve_instances(sig_dir, numInstances-1);
-
-    mn = -1;
-    mx = 1;
-    sig_flow = mdev_add_output(info->dev, "flow", 1, 'f', "normalized", &mn, &mx);
-    msig_reserve_instances(sig_flow, numInstances-1);
 
     return info;
 }
@@ -380,12 +353,12 @@ int main(int argc, char *argv[])
 
                 accel = 0;
 
-                msig_update_instance(sig_accel_in[j], i, &accel);
-                msig_update_instance(sig_accel_out[j], i, &accel);
-                msig_update_instance(sig_vel_in[j], i, &vel);
-                msig_update_instance(sig_vel_out[j], i, &vel);
-                msig_update_instance(sig_pos_in[j], i, &pos);
-                msig_update_instance(sig_pos_out[j], i, &pos);
+                msig_update_instance(sig_accel_in[j], i, &accel, 1);
+                msig_update_instance(sig_accel_out[j], i, &accel, 1);
+                msig_update_instance(sig_vel_in[j], i, &vel, 1);
+                msig_update_instance(sig_vel_out[j], i, &vel, 1);
+                msig_update_instance(sig_pos_in[j], i, &pos, 1);
+                msig_update_instance(sig_pos_out[j], i, &pos, 1);
             }
         }
     }

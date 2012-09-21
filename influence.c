@@ -22,8 +22,8 @@ void on_draw()
     for (i=0; i < maxAgents; i++)
     {
         if (agents[i].active) {
-            msig_update_instance(sigobs[0], i, &agents[i].obs[0]);
-            msig_update_instance(sigobs[1], i, &agents[i].obs[1]);
+            msig_update_instance(sigobs[0], i, &agents[i].obs[0], 1);
+            msig_update_instance(sigobs[1], i, &agents[i].obs[1], 1);
         }
     }
 }
