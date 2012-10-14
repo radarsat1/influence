@@ -326,7 +326,7 @@ void drawAgents()
             glVertex2i(agents[i].pos[0], agents[i].pos[1]);
             glEnd();
 
-            // we will read agent environment here for efficicency
+            // we will read agent environment here for efficiency
             agents[i].obs[0] = data[0];
             agents[i].obs[1] = data[1];
         }
@@ -459,7 +459,7 @@ void renderScene(void)
         glBegin(GL_POINTS);
         for (i=0; i < maxAgents; i++)
         {
-            if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
+            if (agents[i].active) {
                 glVertex2f(agents[i].pos[0] * multx + 2,
                            window_height - agents[i].pos[1] * multy - 2);
             }

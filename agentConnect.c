@@ -26,6 +26,7 @@ mapper_signal sig_pos_in[2],
               sig_accel_in[2],
               sig_accel_out[2],
               sig_force[2];
+mapper_timetag_t tt;
 
 float mass = 1.0;
 float gain = 0.0001;
@@ -74,10 +75,11 @@ void make_xagora_connections()
 }
 
 void force_handler(mapper_signal msig,
-                   int instance_id,
                    mapper_db_signal props,
-                   mapper_timetag_t *timetag,
-                   void *value)
+                   int instance_id,
+                   void *value,
+                   int count,
+                   mapper_timetag_t *timetag)
 {
     if (!value)
         return;
@@ -93,7 +95,7 @@ void force_handler(mapper_signal msig,
     }
 
     accel = (*paccel) + (*force) / mass * gain;
-    msig_update_instance(sig, instance_id, &accel, 1);
+    msig_update_instance(sig, instance_id, &accel, 1, MAPPER_TIMETAG_NOW);
 }
 
 void dev_db_callback(mapper_db_device record,
@@ -175,6 +177,8 @@ struct _agentInfo *agentInit()
     printf("ordinal: %d\n", mdev_ordinal(info->dev));
     fflush(stdout);
 
+    mdev_timetag_now(info->dev, &tt);
+
     // add monitor and monitor callbacks
     info->mon = mapper_monitor_new(info->admin, 0);
     info->db  = mapper_monitor_get_db(info->mon);
@@ -197,8 +201,8 @@ struct _agentInfo *agentInit()
 
     // initialize accelerations to zero
     for (i=0; i<numInstances; i++) {
-        msig_update_instance(sig_accel_in[0], i, &init, 1);
-        msig_update_instance(sig_accel_in[1], i, &init, 1);
+        msig_update_instance(sig_accel_in[0], i, &init, 1, tt);
+        msig_update_instance(sig_accel_in[1], i, &init, 1, tt);
     }
 
     sig_force[0] = mdev_add_input(info->dev, "force/x", 1, 'f', "N", &mn, &mx,
@@ -221,8 +225,8 @@ struct _agentInfo *agentInit()
     
     // initialize velocities to zero
     for (i=0; i<numInstances; i++) {
-        msig_update_instance(sig_vel_in[0], i, &init, 1);
-        msig_update_instance(sig_vel_in[1], i, &init, 1);
+        msig_update_instance(sig_vel_in[0], i, &init, 1, tt);
+        msig_update_instance(sig_vel_in[1], i, &init, 1, tt);
     }
 
     sig_pos_in[0] = mdev_add_input(info->dev, "position/x", 1, 'f', 0,
@@ -239,9 +243,9 @@ struct _agentInfo *agentInit()
     // initialize positions to random values
     for (i=0; i<numInstances; i++) {
         init = rand()%1000*0.002-1.0;
-        msig_update_instance(sig_pos_in[0], i, &init, 1);
+        msig_update_instance(sig_pos_in[0], i, &init, 1, tt);
         init = rand()%1000*0.002-1.0;
-        msig_update_instance(sig_pos_in[1], i, &init, 1);
+        msig_update_instance(sig_pos_in[1], i, &init, 1, tt);
     }
 
     return info;
@@ -253,14 +257,17 @@ void agentLogout()
     struct _agentInfo *info = &agentInfo;
 
     int i;
+    mdev_timetag_now(info->dev, &tt);
+    mdev_start_queue(info->dev, tt);
     for (i=0; i<numInstances; i++) {
-        msig_release_instance(sig_pos_out[0], i);
-        msig_release_instance(sig_pos_out[1], i);
-        msig_release_instance(sig_vel_out[0], i);
-        msig_release_instance(sig_vel_out[1], i);
-        msig_release_instance(sig_accel_out[0], i);
-        msig_release_instance(sig_accel_out[1], i);
+        msig_release_instance(sig_pos_out[0], i, tt);
+        msig_release_instance(sig_pos_out[1], i, tt);
+        msig_release_instance(sig_vel_out[0], i, tt);
+        msig_release_instance(sig_vel_out[1], i, tt);
+        msig_release_instance(sig_accel_out[0], i, tt);
+        msig_release_instance(sig_accel_out[1], i, tt);
     }
+    mdev_send_queue(info->dev, tt);
 
     if (info->influence_device_name) {
         mapper_monitor_unlink(info->mon,
@@ -319,6 +326,8 @@ int main(int argc, char *argv[])
         mapper_monitor_poll(info->mon, 0);
         mdev_poll(info->dev, 20);
 
+        mdev_timetag_now(info->dev, &tt);
+        mdev_start_queue(info->dev, tt);
         for (i=0; i<numInstances; i++) {
             for (j=0; j<2; j++) {
                 paccel = (float *)msig_instance_value(sig_accel_in[j], i, 0);
@@ -353,14 +362,15 @@ int main(int argc, char *argv[])
 
                 accel = 0;
 
-                msig_update_instance(sig_accel_in[j], i, &accel, 1);
-                msig_update_instance(sig_accel_out[j], i, &accel, 1);
-                msig_update_instance(sig_vel_in[j], i, &vel, 1);
-                msig_update_instance(sig_vel_out[j], i, &vel, 1);
-                msig_update_instance(sig_pos_in[j], i, &pos, 1);
-                msig_update_instance(sig_pos_out[j], i, &pos, 1);
+                msig_update_instance(sig_accel_in[j], i, &accel, 1, tt);
+                msig_update_instance(sig_accel_out[j], i, &accel, 1, tt);
+                msig_update_instance(sig_vel_in[j], i, &vel, 1, tt);
+                msig_update_instance(sig_vel_out[j], i, &vel, 1, tt);
+                msig_update_instance(sig_pos_in[j], i, &pos, 1, tt);
+                msig_update_instance(sig_pos_out[j], i, &pos, 1, tt);
             }
         }
+        mdev_send_queue(info->dev, tt);
     }
 
 done:

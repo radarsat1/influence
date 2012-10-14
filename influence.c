@@ -11,6 +11,7 @@
 #include "influence_opengl.h"
 
 mapper_device dev = 0;
+mapper_timetag_t tt;
 mapper_signal sigpos[2];
 mapper_signal sigobs[2];
 
@@ -19,20 +20,24 @@ void on_draw()
     while (mdev_poll(dev, 0)) {}
 
     int i;
+    mdev_timetag_now(dev, &tt);
+    mdev_start_queue(dev, tt);
     for (i=0; i < maxAgents; i++)
     {
         if (agents[i].active) {
-            msig_update_instance(sigobs[0], i, &agents[i].obs[0], 1);
-            msig_update_instance(sigobs[1], i, &agents[i].obs[1], 1);
+            msig_update_instance(sigobs[0], i, &agents[i].obs[0], 1, tt);
+            msig_update_instance(sigobs[1], i, &agents[i].obs[1], 1, tt);
         }
     }
+    mdev_send_queue(dev, tt);
 }
 
 void on_signal_border_gain(mapper_signal msig,
-                           int instance_id,
                            mapper_db_signal props,
-                           mapper_timetag_t *timetag,
-                           void *value)
+                           int instance_id,
+                           void *value,
+                           int count,
+                           mapper_timetag_t *timetag)
 {
     if (!value)
         return;
@@ -42,10 +47,11 @@ void on_signal_border_gain(mapper_signal msig,
 }
 
 void on_signal_pos(mapper_signal msig,
-                   int instance_id,
                    mapper_db_signal props,
-                   mapper_timetag_t *timetag,
-                   void *value)
+                   int instance_id,
+                   void *value,
+                   int count,
+                   mapper_timetag_t *timetag)
 {
     if (value) {
         int offset = (long)props->user_data;
@@ -65,10 +71,11 @@ void on_signal_pos(mapper_signal msig,
 }
 
 void on_signal_gain(mapper_signal msig,
-                    int instance_id,
                     mapper_db_signal props,
-                    mapper_timetag_t *timetag,
-                    void *value)
+                    int instance_id,
+                    void *value,
+                    int count,
+                    mapper_timetag_t *timetag)
 {
     if (!value)
         return;
@@ -77,10 +84,11 @@ void on_signal_gain(mapper_signal msig,
 }
 
 void on_signal_spin(mapper_signal msig,
-                    int instance_id,
                     mapper_db_signal props,
-                    mapper_timetag_t *timetag,
-                    void *value)
+                    int instance_id,
+                    void *value,
+                    int count,
+                    mapper_timetag_t *timetag)
 {
     if (!value)
         return;
@@ -89,10 +97,11 @@ void on_signal_spin(mapper_signal msig,
 }
 
 void on_signal_fade(mapper_signal msig,
-                    int instance_id,
                     mapper_db_signal props,
-                    mapper_timetag_t *timetag,
-                    void *value)
+                    int instance_id,
+                    void *value,
+                    int count,
+                    mapper_timetag_t *timetag)
 {
     if (!value)
         return;
@@ -101,10 +110,11 @@ void on_signal_fade(mapper_signal msig,
 }
 
 void on_signal_dir(mapper_signal msig,
-                   int instance_id,
                    mapper_db_signal props,
-                   mapper_timetag_t *timetag,
-                   void *value)
+                   int instance_id,
+                   void *value,
+                   int count,
+                   mapper_timetag_t *timetag)
 {
     if (!value)
         return;
@@ -114,10 +124,11 @@ void on_signal_dir(mapper_signal msig,
 }
 
 void on_signal_flow(mapper_signal msig,
-                    int instance_id,
                     mapper_db_signal props,
-                    mapper_timetag_t *timetag,
-                    void *value)
+                    int instance_id,
+                    void *value,
+                    int count,
+                    mapper_timetag_t *timetag)
 {
     if (!value)
         return;
@@ -230,10 +241,13 @@ void mapperLogout()
 {
     int i;
     printf("Cleaning up...\n");
+    mdev_timetag_now(dev, &tt);
+    mdev_start_queue(dev, tt);
     for (i=0; i<maxAgents; i++) {
-        msig_release_instance(sigobs[0], i);
-        msig_release_instance(sigobs[1], i);
+        msig_release_instance(sigobs[0], i, tt);
+        msig_release_instance(sigobs[1], i, tt);
     }
+    mdev_send_queue(dev, tt);
     mdev_poll(dev, 100);
     mdev_free(dev);
 }
