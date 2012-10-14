@@ -451,14 +451,17 @@ void renderScene(void)
     }
 
     if (showField != 1) {
+        float multx = window_width * 0.002;
+        float multy = window_height * 0.002;
         glPointSize(5);
         int i;
         glColor3f(1,1,1);
         glBegin(GL_POINTS);
         for (i=0; i < maxAgents; i++)
         {
-            if (agents[i].active) {
-                glVertex2f(agents[i].pos[0], window_height-agents[i].pos[1]-2);
+            if (agents[i].pos[0] > -1 && agents[i].pos[1] > -1) {
+                glVertex2f(agents[i].pos[0] * multx + 2,
+                           window_height - agents[i].pos[1] * multy - 2);
             }
         }
         glEnd();
