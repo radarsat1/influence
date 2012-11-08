@@ -304,19 +304,19 @@ void drawFullScreenWindowQuad()
 void drawAgents()
 {
     float data[5*5*4];
-    float gain, sin_spin, cos_spin, dir[2], flow;
+    float gain; //, sin_spin, cos_spin, dir[2], flow;
     int i;
     for (i=0; i < maxAgents; i++)
     {
         if (agents[i].active)
         {
             // todo: spin should be read from agent data structure
-            sin_spin = sin(agents[i].spin);
-            cos_spin = cos(agents[i].spin);
-            dir[0] = agents[i].dir[0];
-            dir[1] = agents[i].dir[1];
+//            sin_spin = sin(agents[i].spin);
+//            cos_spin = cos(agents[i].spin);
+//            dir[0] = agents[i].dir[0];
+//            dir[1] = agents[i].dir[1];
             gain = agents[i].gain;
-            flow = agents[i].flow;
+//            flow = agents[i].flow;
             glReadPixels(agents[i].pos[0]+x_offset,
                          agents[i].pos[1]+y_offset,
                          1, 1,
