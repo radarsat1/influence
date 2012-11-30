@@ -55,8 +55,8 @@ Observation* InfluenceEnvironment::start() {
   // Send position.
   int x = (int)pos[0];
   int y = (int)pos[1];
-  msig_update(outsigX, &x);
-  msig_update(outsigY, &y);
+  msig_update(outsigX, &x, 0, MAPPER_TIMETAG_NOW);
+  msig_update(outsigY, &y, 0, MAPPER_TIMETAG_NOW);
 
   // Wait for response.
   mdev_poll(dev, 1000);
@@ -107,8 +107,8 @@ Observation* InfluenceEnvironment::step(const Action* action) {
   // Send position.
   int x = (int)pos[0];
   int y = (int)pos[1];
-  msig_update(outsigX, &x);
-  msig_update(outsigY, &y);
+  msig_update(outsigX, &x, 0, MAPPER_TIMETAG_NOW);
+  msig_update(outsigY, &y, 0, MAPPER_TIMETAG_NOW);
   
   // Wait for retroaction.
   while (! mdev_poll(dev, 10) );
